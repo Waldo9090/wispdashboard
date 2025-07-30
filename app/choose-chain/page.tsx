@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Mic, ArrowRight, Shield, AlertTriangle } from "lucide-react"
@@ -24,6 +24,30 @@ export default function ChooseChainPage() {
   const [loadingChains, setLoadingChains] = useState(false);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const [authorizationChecked, setAuthorizationChecked] = useState(false);
+
+  const loadChains = useCallback(async () => {
+    try {
+      setLoadingChains(true);
+      const chainsRef = collection(db, 'locations');
+      const chainsSnap = await getDocs(chainsRef);
+      
+      const chainsList = chainsSnap.docs.map(doc => ({
+        id: doc.id,
+        name: doc.data().name || doc.id
+      }));
+      
+      if (chainsList.length === 0) {
+        setError('No chains found. Please contact your administrator.');
+      } else {
+        setChains(chainsList);
+      }
+    } catch (error: any) {
+      console.error('Error loading chains:', error);
+      setError('Failed to load chains. Please try again.');
+    } finally {
+      setLoadingChains(false);
+    }
+  }, []);
 
   // Check authorization when user loads
   useEffect(() => {
@@ -51,31 +75,7 @@ export default function ChooseChainPage() {
     if (user?.email && AUTHORIZED_EMAILS.includes(user.email)) {
       loadChains();
     }
-  }, [user]);
-
-  const loadChains = async () => {
-    try {
-      setLoadingChains(true);
-      const chainsRef = collection(db, 'locations');
-      const chainsSnap = await getDocs(chainsRef);
-      
-      const chainsList = chainsSnap.docs.map(doc => ({
-        id: doc.id,
-        name: doc.data().name || doc.id
-      }));
-      
-      if (chainsList.length === 0) {
-        setError('No chains found. Please contact your administrator.');
-      } else {
-        setChains(chainsList);
-      }
-    } catch (error: any) {
-      console.error('Error loading chains:', error);
-      setError('Failed to load chains. Please try again.');
-    } finally {
-      setLoadingChains(false);
-    }
-  };
+  }, [user, loadChains]);
 
   const handleAuthorize = () => {
     setIsAuthorized(true);
