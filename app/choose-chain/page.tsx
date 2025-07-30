@@ -3,18 +3,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Mic, ArrowRight, Shield, AlertTriangle } from "lucide-react"
+import { Mic, ArrowRight } from "lucide-react"
 import { useAuth } from '@/context/auth-context';
 import { collection, getDocs, doc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
-// Authorized email list
-const AUTHORIZED_EMAILS = [
-  'adimahna@gmail.com',
-  'Vverma@revive.md'
-];
-
 export default function ChooseChainPage() {
+  // All hooks must be called unconditionally at the top level
   const router = useRouter();
   const { user, loading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
@@ -22,8 +17,6 @@ export default function ChooseChainPage() {
   const [selectedChain, setSelectedChain] = useState<string>('');
   const [chains, setChains] = useState<{id: string, name: string}[]>([]);
   const [loadingChains, setLoadingChains] = useState(false);
-  const [isAuthorized, setIsAuthorized] = useState(false);
-  const [authorizationChecked, setAuthorizationChecked] = useState(false);
 
   const loadChains = useCallback(async () => {
     try {
@@ -49,39 +42,7 @@ export default function ChooseChainPage() {
     }
   }, []);
 
-  // Check authorization when user loads
-  useEffect(() => {
-    if (user?.email) {
-      const isEmailAuthorized = AUTHORIZED_EMAILS.includes(user.email);
-      setAuthorizationChecked(true);
-      
-      if (!isEmailAuthorized) {
-        // Redirect unauthorized users to landing page
-        router.push('/');
-        return;
-      }
-    }
-  }, [user, router]);
-
-  // Redirect if user is not signed in
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/signin');
-    }
-  }, [user, loading, router]);
-
-  // Load chains when component mounts and user is authorized
-  useEffect(() => {
-    if (user?.email && AUTHORIZED_EMAILS.includes(user.email)) {
-      loadChains();
-    }
-  }, [user, loadChains]);
-
-  const handleAuthorize = () => {
-    setIsAuthorized(true);
-  };
-
-  const handleChainSelect = async () => {
+  const handleChainSelect = useCallback(async () => {
     if (!selectedChain) {
       setError('Please select a chain');
       return;
@@ -111,10 +72,24 @@ export default function ChooseChainPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedChain, user?.uid, router]);
+
+  // Redirect if user is not signed in
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/signin');
+    }
+  }, [user, loading, router]);
+
+  // Load chains when user is authenticated
+  useEffect(() => {
+    if (user) {
+      loadChains();
+    }
+  }, [user, loadChains]);
 
   // Show loading while auth is initializing
-  if (loading || !authorizationChecked) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
@@ -127,73 +102,6 @@ export default function ChooseChainPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  // Check if user email is authorized
-  const isEmailAuthorized = AUTHORIZED_EMAILS.includes(user.email);
-  
-  // If email is not authorized, show unauthorized message (should redirect but just in case)
-  if (!isEmailAuthorized) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md shadow-sm border border-border">
-          <CardHeader className="text-center pb-6">
-            <div className="flex items-center justify-center mb-4">
-              <div className="w-10 h-10 bg-destructive rounded-lg flex items-center justify-center">
-                <AlertTriangle className="w-6 h-6 text-destructive-foreground" />
-              </div>
-            </div>
-            <CardTitle className="text-xl font-bold text-foreground">Access Denied</CardTitle>
-            <p className="text-muted-foreground mt-2">You are not authorized to access this application.</p>
-          </CardHeader>
-          <CardContent className="text-center">
-            <p className="text-sm text-muted-foreground mb-4">
-              Email: <span className="font-medium text-foreground">{user.email}</span>
-            </p>
-            <button
-              onClick={() => router.push('/')}
-              className="w-full px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-            >
-              Return to Landing Page
-            </button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Show authorization screen if not yet authorized
-  if (!isAuthorized) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <Card className="w-full max-w-md shadow-sm border border-border">
-          <CardHeader className="text-center pb-6">
-            <div className="flex items-center justify-center mb-4">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <Shield className="w-6 h-6 text-primary-foreground" />
-              </div>
-              <span className="text-2xl font-bold text-foreground ml-3">Wisp AI</span>
-            </div>
-            <CardTitle className="text-2xl font-bold text-foreground">Authorization Required</CardTitle>
-            <p className="text-muted-foreground mt-2">Please authorize access to continue</p>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="bg-muted/50 border border-border rounded-lg p-4">
-              <p className="text-sm text-muted-foreground mb-2">Authorized User:</p>
-              <p className="font-medium text-foreground">{user.email}</p>
-            </div>
-
-            <button
-              onClick={handleAuthorize}
-              className="w-full flex items-center justify-center gap-3 px-6 py-3 rounded-lg font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-            >
-              <Shield className="w-4 h-4" />
-              <span>Authorize Access</span>
-            </button>
-          </CardContent>
-        </Card>
       </div>
     );
   }

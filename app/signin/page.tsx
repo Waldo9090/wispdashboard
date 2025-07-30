@@ -155,39 +155,30 @@ export default function SignInPage() {
       let authResult;
       
       if (isSignUp) {
-        // Create new user
+        // Create new user with Firebase Auth
         authResult = await createUserWithEmailAndPassword(auth, email, password);
         
-        // Save user credentials to Firestore
+        // Save user data to Firestore (NO password storage)
         await setDoc(doc(db, 'users', authResult.user.uid), {
           email: email,
-          password: password, // Note: In production, you should hash this
           displayName: email.split('@')[0], // Use email prefix as display name
           createdAt: new Date().toISOString(),
           lastSignIn: new Date().toISOString(),
-          authMethod: 'email'
+          authMethod: 'email',
+          // Note: Password is handled securely by Firebase Auth
         }, { merge: true });
         
-        console.log('✅ New user created and saved to Firestore');
+        console.log('✅ New user created with Firebase Auth and saved to Firestore');
       } else {
-        // Sign in existing user
+        // Sign in existing user with Firebase Auth
         authResult = await signInWithEmailAndPassword(auth, email, password);
         
-        // Verify credentials match what's stored in Firestore
-        const userDoc = await getDoc(doc(db, 'users', authResult.user.uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          if (userData.email !== email || userData.password !== password) {
-            throw new Error('Invalid email or password');
-          }
-          
-          // Update last sign in
-          await setDoc(doc(db, 'users', authResult.user.uid), {
-            lastSignIn: new Date().toISOString()
-          }, { merge: true });
-        }
+        // Update last sign in time in Firestore
+        await setDoc(doc(db, 'users', authResult.user.uid), {
+          lastSignIn: new Date().toISOString()
+        }, { merge: true });
         
-        console.log('✅ User signed in successfully');
+        console.log('✅ User authenticated with Firebase Auth');
       }
 
       // Show clinic selection after successful authentication
@@ -195,22 +186,51 @@ export default function SignInPage() {
       loadClinics();
       
     } catch (error: any) {
-      console.error('Email auth error:', error);
-      if (error.code === 'auth/user-not-found') {
-        setError('No account found with this email. Please sign up.');
-        setIsSignUp(true);
-      } else if (error.code === 'auth/wrong-password') {
-        setError('Incorrect password. Please try again.');
-      } else if (error.code === 'auth/email-already-in-use') {
-        setError('An account with this email already exists. Please sign in.');
-        setIsSignUp(false);
-      } else if (error.code === 'auth/weak-password') {
-        setError('Password should be at least 6 characters long.');
-      } else if (error.code === 'auth/invalid-email') {
-        setError('Please enter a valid email address. Or sign up with the link below.');
-        setIsSignUp(true);
-      } else {
-        setError(error.message || 'Authentication failed. Please try again.');
+      console.error('Firebase Auth error:', error);
+      
+      // Handle specific Firebase Auth error codes with clear messages
+      switch (error.code) {
+        case 'auth/user-not-found':
+          setError('📧 No account found with this email. Please sign up.');
+          setIsSignUp(true);
+          break;
+          
+        case 'auth/wrong-password':
+          setError('❌ Incorrect password. Please check your password and try again.');
+          break;
+          
+        case 'auth/email-already-in-use':
+          setError('⚠️ An account with this email already exists. Please sign in instead.');
+          setIsSignUp(false);
+          break;
+          
+        case 'auth/weak-password':
+          setError('🔒 Password should be at least 6 characters long.');
+          break;
+          
+        case 'auth/invalid-email':
+          setError('📧 Please enter a valid email address.');
+          break;
+          
+        case 'auth/invalid-credential':
+          setError('🔐 Invalid email or password. Please check your credentials.');
+          break;
+          
+        case 'auth/too-many-requests':
+          setError('⏰ Too many failed attempts. Please try again later.');
+          break;
+          
+        case 'auth/network-request-failed':
+          setError('🌐 Network error. Please check your internet connection.');
+          break;
+          
+        case 'auth/operation-not-allowed':
+          setError('🚫 Email/password authentication is not enabled in Firebase.');
+          break;
+          
+        default:
+          setError(`Authentication failed: ${error.message || 'Unknown error'}`);
+          break;
       }
     } finally {
       setIsLoading(false);
