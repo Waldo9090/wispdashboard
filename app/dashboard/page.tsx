@@ -40,6 +40,12 @@ import { logger, clientLogger } from "@/lib/logger"
 import { SalesPerformanceSummary, IndividualSalesPerformance } from "@/components/sales-performance-summary"
 import { calculateSalesPerformanceAverages, getSalesPerformanceInsights } from "@/lib/sales-performance-utils"
 
+// Authorized email list
+const AUTHORIZED_EMAILS = [
+  'adimahna@gmail.com',
+  'Vverma@revive.md'
+];
+
 // Category definitions for med spa consultation protocol analysis
 const categories = [
   { name: "Patient Interview & History", color: "bg-purple-500", keywords: ["medical history", "allergies", "medications", "demographics", "age", "gender", "contraindications", "GFE", "intake form", "medical conditions", "precautions", "chart review", "patient chart", "review patient", "medical record"] },
@@ -515,10 +521,18 @@ export default function Dashboard() {
   const searchParams = useSearchParams()
   const router = useRouter()
 
-  // Check if user exists in Firestore users collection
+  // Check if user exists in Firestore users collection and is authorized
   useEffect(() => {
     const checkUserInFirestore = async () => {
       if (!authLoading && user) {
+        // Check if user email is authorized
+        const isEmailAuthorized = AUTHORIZED_EMAILS.includes(user.email);
+        if (!isEmailAuthorized) {
+          console.log('🚫 Unauthorized user access attempt:', user.email);
+          router.push('/');
+          return;
+        }
+
         try {
           console.log('🔍 Checking if user exists in Firestore users collection...')
           const userDoc = await getDoc(doc(db, 'users', user.uid))
