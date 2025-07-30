@@ -46,6 +46,73 @@ export default function ChooseChainPage() {
     }
   }, [user, loading, router]);
 
+  // Load chains when component mounts and user is authorized
+  useEffect(() => {
+    if (user?.email && AUTHORIZED_EMAILS.includes(user.email)) {
+      loadChains();
+    }
+  }, [user]);
+
+  const loadChains = async () => {
+    try {
+      setLoadingChains(true);
+      const chainsRef = collection(db, 'locations');
+      const chainsSnap = await getDocs(chainsRef);
+      
+      const chainsList = chainsSnap.docs.map(doc => ({
+        id: doc.id,
+        name: doc.data().name || doc.id
+      }));
+      
+      if (chainsList.length === 0) {
+        setError('No chains found. Please contact your administrator.');
+      } else {
+        setChains(chainsList);
+      }
+    } catch (error: any) {
+      console.error('Error loading chains:', error);
+      setError('Failed to load chains. Please try again.');
+    } finally {
+      setLoadingChains(false);
+    }
+  };
+
+  const handleAuthorize = () => {
+    setIsAuthorized(true);
+  };
+
+  const handleChainSelect = async () => {
+    if (!selectedChain) {
+      setError('Please select a chain');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // Save chain to Firestore user document
+      if (user?.uid) {
+        await setDoc(doc(db, 'users', user.uid), {
+          userChain: selectedChain,
+          lastUpdated: new Date().toISOString()
+        }, { merge: true });
+        console.log('✅ Saved userChain to Firestore:', selectedChain);
+      }
+      
+      // Also save to localStorage as backup
+      localStorage.setItem('userChain', selectedChain);
+      
+      // Redirect to dashboard with the selected chain
+      router.push(`/dashboard?chain=${selectedChain}`);
+    } catch (error: any) {
+      console.error('Chain save error:', error);
+      setError('Failed to save chain selection');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Show loading while auth is initializing
   if (loading || !authorizationChecked) {
     return (
@@ -96,71 +163,6 @@ export default function ChooseChainPage() {
       </div>
     );
   }
-
-  const loadChains = async () => {
-    try {
-      setLoadingChains(true);
-      const chainsRef = collection(db, 'locations');
-      const chainsSnap = await getDocs(chainsRef);
-      
-      const chainsList = chainsSnap.docs.map(doc => ({
-        id: doc.id,
-        name: doc.data().name || doc.id
-      }));
-      
-      if (chainsList.length === 0) {
-        setError('No chains found. Please contact your administrator.');
-      } else {
-        setChains(chainsList);
-      }
-    } catch (error: any) {
-      console.error('Error loading chains:', error);
-      setError('Failed to load chains. Please try again.');
-    } finally {
-      setLoadingChains(false);
-    }
-  };
-
-  // Load chains when component mounts
-  useEffect(() => {
-    loadChains();
-  }, []);
-
-  const handleAuthorize = () => {
-    setIsAuthorized(true);
-  };
-
-  const handleChainSelect = async () => {
-    if (!selectedChain) {
-      setError('Please select a chain');
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setError(null);
-      
-      // Save chain to Firestore user document
-      if (user?.uid) {
-        await setDoc(doc(db, 'users', user.uid), {
-          userChain: selectedChain,
-          lastUpdated: new Date().toISOString()
-        }, { merge: true });
-        console.log('✅ Saved userChain to Firestore:', selectedChain);
-      }
-      
-      // Also save to localStorage as backup
-      localStorage.setItem('userChain', selectedChain);
-      
-      // Redirect to dashboard with the selected chain
-      router.push(`/dashboard?chain=${selectedChain}`);
-    } catch (error: any) {
-      console.error('Chain save error:', error);
-      setError('Failed to save chain selection');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // Show authorization screen if not yet authorized
   if (!isAuthorized) {
