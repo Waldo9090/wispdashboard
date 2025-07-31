@@ -166,6 +166,7 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("TRACKERS")
   const [selectedCategory, setSelectedCategory] = useState("All Categories")
   const [transcripts, setTranscripts] = useState<TranscriptData[]>([])
+  const [totalTranscriptCount, setTotalTranscriptCount] = useState<number>(0)
   const [categoryData, setCategoryData] = useState<CategoryData[]>([])
   const [phraseData, setPhraseData] = useState<PhraseData[]>([])
   const [loading, setLoading] = useState(true)
@@ -509,6 +510,68 @@ export default function Dashboard() {
       messageCount: 0
     }
     setChatSessions(prev => [newSession, ...prev])
+  }
+
+  // Function to get total transcript count by counting timestamp documents
+  const loadTotalTranscriptCount = async () => {
+    try {
+      console.log('📊 Loading total transcript count by counting timestamp documents...')
+      
+      // Get all locations for the current chain
+      const urlParams = new URLSearchParams(window.location.search)
+      const chainParam = urlParams.get('chain') || 'Revive'
+      
+      // Get locations from API
+      const locationsResponse = await fetch(`/api/get-locations?chainId=${encodeURIComponent(chainParam)}`)
+      if (!locationsResponse.ok) {
+        console.error('❌ Failed to get locations from API')
+        return
+      }
+      
+      const locationsData = await locationsResponse.json()
+      if (!locationsData.success || !locationsData.locations) {
+        console.error('❌ Invalid locations data from API')
+        return
+      }
+      
+      let totalCount = 0
+      
+      // Count timestamp documents in each location
+      for (const location of locationsData.locations) {
+        try {
+          console.log(`📊 Counting timestamps for location: ${location.name}`)
+          
+          // Get document IDs for this location
+          const locationResponse = await fetch(`/api/get-location-documents?chainId=${encodeURIComponent(chainParam)}&locationId=${encodeURIComponent(location.id)}`)
+          if (locationResponse.ok) {
+            const locationDocuments = await locationResponse.json()
+            if (locationDocuments.success && locationDocuments.documentIds) {
+              // Count timestamp documents for each transcript document
+              for (const docId of locationDocuments.documentIds) {
+                try {
+                  // Check if timestamp document exists
+                  const timestampRef = collection(db, 'timestamps', docId, 'entries')
+                  const timestampSnap = await getDocs(timestampRef)
+                  totalCount += timestampSnap.size
+                } catch (timestampError) {
+                  console.warn(`⚠️ Could not count timestamps for ${docId}:`, timestampError)
+                }
+              }
+            }
+          }
+        } catch (locationError) {
+          console.warn(`⚠️ Could not process location ${location.id}:`, locationError)
+        }
+      }
+      
+      console.log(`📊 Found ${totalCount} total timestamp documents`)
+      setTotalTranscriptCount(totalCount)
+      
+      clientLogger.info('📊 Total transcript count loaded successfully', { count: totalCount })
+    } catch (error) {
+      console.error('❌ Error loading total transcript count:', error)
+      clientLogger.error('❌ Failed to load total transcript count', error)
+    }
   }
 
   // Load chat session
@@ -1880,6 +1943,9 @@ export default function Dashboard() {
         clientLogger.info('🚀 Starting analytics data load process...')
         setLoading(true)
         
+        // Load total transcript count from transcript collection
+        await loadTotalTranscriptCount()
+        
         // Set a safety timeout to prevent infinite loading (60 seconds)
         loadingTimeout = setTimeout(() => {
           clientLogger.error('⏰ Analytics loading timed out after 60 seconds')
@@ -2789,13 +2855,25 @@ export default function Dashboard() {
                   <div className="flex space-x-2 mt-2">
                     <Select value={selectedCategory} onValueChange={handleCategorySelect}>
                       <SelectTrigger className="flex-1">
-                        <SelectValue />
+                        <SelectValue>
+                          {selectedCategory === "All Categories" ? (
+                            "All Categories"
+                          ) : (
+                            <div className="flex items-center space-x-2">
+                              <div className={`w-3 h-3 rounded-full ${categories.find(cat => cat.name === selectedCategory)?.color || 'bg-gray-500'}`} />
+                              <span>{selectedCategory}</span>
+                            </div>
+                          )}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="All Categories">All Categories</SelectItem>
                         {categories.map((category) => (
                           <SelectItem key={category.name} value={category.name}>
-                            {category.name}
+                            <div className="flex items-center space-x-2">
+                              <div className={`w-3 h-3 rounded-full ${category.color}`} />
+                              <span>{category.name}</span>
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -3159,11 +3237,28 @@ export default function Dashboard() {
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex-1 min-w-0">
                               <h3 className="font-medium text-gray-900 truncate">{getDecryptedNameForTranscript(recording)}</h3>
-                              <p className="text-xs text-gray-500 mt-1">{getLocationNameForTranscript(recording)}</p>
+                              <div className="flex items-center justify-between mt-1">
+                                <p className="text-xs text-gray-500">{getLocationNameForTranscript(recording)}</p>
+                                <p className="text-xs text-gray-500">
+                                  {recording.timestamp?.toDate ? 
+                                    recording.timestamp.toDate().toLocaleDateString('en-US', { 
+                                      month: 'short', 
+                                      day: 'numeric',
+                                      hour: 'numeric',
+                                      minute: '2-digit',
+                                      hour12: true
+                                    }) : 
+                                    new Date(recording.timestamp || Date.now()).toLocaleDateString('en-US', { 
+                                      month: 'short', 
+                                      day: 'numeric',
+                                      hour: 'numeric',
+                                      minute: '2-digit',
+                                      hour12: true
+                                    })
+                                  }
+                                </p>
+                              </div>
                             </div>
-                            <span className="text-xs text-gray-500 ml-2">
-                              {recording.durationSeconds.toFixed(1)}s
-                            </span>
                           </div>
                           {recording.speakerTranscript && recording.speakerTranscript.length > 0 ? (
                             <div className="text-sm text-gray-600">
@@ -3179,13 +3274,6 @@ export default function Dashboard() {
                               {recording.transcript && recording.transcript.length > 80 ? '...' : ''}
                             </div>
                           )}
-                        </div>
-                        <div className={`px-2 py-1 rounded-full text-xs ${
-                          recording.status === 'complete' ? 'bg-green-100 text-green-700' :
-                          recording.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-gray-100 text-gray-700'
-                        }`}>
-                          {recording.status}
                         </div>
                       </div>
                     </div>
@@ -3573,7 +3661,7 @@ export default function Dashboard() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-slate-600 font-medium">Total Transcripts</p>
-                    <p className="text-3xl font-bold text-emerald-600 mt-1">{transcripts.length}</p>
+                    <p className="text-3xl font-bold text-emerald-600 mt-1">{totalTranscriptCount}</p>
                   </div>
                   <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
                     <FileText className="w-6 h-6 text-emerald-600" />

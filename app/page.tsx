@@ -1,279 +1,690 @@
 "use client"
 
-import Link from "next/link"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Mic, BarChart3, Users, CheckCircle, ArrowRight } from "lucide-react"
-import { useEffect, useState } from "react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+import {
+  TrendingUp,
+  Calendar,
+  MessageSquare,
+  BarChart3,
+  Clock,
+  Star,
+  Zap,
+  Lightbulb,
+  Users,
+  DollarSign,
+} from "lucide-react" // Added Lightbulb, Users, DollarSign
 
-export default function LandingPage() {
-  const [isVisible, setIsVisible] = useState(false)
+export default function MedicalSpaLanding() {
+  const [activeTab, setActiveTab] = useState("visibility") // Default active tab
 
-  useEffect(() => {
-    setIsVisible(true)
-  }, [])
+  const renderFeatureContent = () => {
+    switch (activeTab) {
+      case "visibility":
+        return (
+          <div className="bg-gray-100 rounded-lg p-12 border border-gray-200">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <div className="text-sm text-purple-600 font-semibold mb-4">VISIBILITY</div>
+                <h3 className="text-3xl font-bold text-gray-900 mb-6 leading-tight">
+                  See what your clients <span className="text-purple-600">really want</span>
+                </h3>
+                <p className="text-gray-700 mb-8 leading-relaxed">
+                  Our AI analyzes every consultation to identify client preferences, concerns, and budget
+                  considerations. No more guessing what treatments to recommend - get data-driven insights that lead to
+                  higher conversion rates.
+                </p>
+                <Button className="neon-purple text-white font-semibold">See How It Works</Button>
+              </div>
+              <div className="relative">
+                <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-md">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-sm text-gray-600 font-medium">Client Insights Dashboard</span>
+                    <div className="text-xs text-gray-500 font-medium">Live Analysis</div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-gray-50 rounded text-gray-900 border border-gray-200">
+                      <div className="text-sm font-semibold">Budget Discussion</div>
+                      <div className="text-xs text-gray-600 mt-1">Client mentioned $3,000 budget</div>
+                    </div>
+                    <div className="p-3 bg-purple-50 border border-purple-200 rounded text-gray-900">
+                      <div className="text-sm font-semibold">Upsell Opportunity</div>
+                      <div className="text-xs text-purple-600 mt-1">Perfect candidate for premium package</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      case "coaching":
+        return (
+          <div className="bg-gray-100 rounded-lg p-12 border border-gray-200">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <div className="text-sm text-purple-600 font-semibold mb-4">COACHING</div>
+                <h3 className="text-3xl font-bold text-gray-900 mb-6 leading-tight">
+                  Train your team to <span className="text-purple-600">close more deals</span>
+                </h3>
+                <p className="text-gray-700 mb-8 leading-relaxed">
+                  Get real-time coaching suggestions during consultations. Our AI identifies missed opportunities and
+                  provides instant feedback to help your staff improve their sales techniques and client interactions.
+                </p>
+                <Button className="neon-purple text-white font-semibold">View Training Tools</Button>
+              </div>
+              <div className="relative">
+                <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-md">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-sm text-gray-600 font-medium">Coaching Suggestions</span>
+                    <div className="text-xs text-green-600 font-medium">Active</div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-green-50 border border-green-200 rounded text-gray-900">
+                      <div className="text-sm font-semibold">Suggest Add-on Service</div>
+                      <div className="text-xs text-green-600 mt-1">Client shows interest in skincare routine</div>
+                    </div>
+                    <div className="p-3 bg-yellow-50 border border-yellow-200 rounded text-gray-900">
+                      <div className="text-sm font-semibold">Address Concern</div>
+                      <div className="text-xs text-yellow-600 mt-1">Client mentioned budget constraints</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      case "intelligence":
+  return (
+          <div className="bg-gray-100 rounded-lg p-12 border border-gray-200">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <div className="text-sm text-purple-600 font-semibold mb-4">INTELLIGENCE</div>
+                <h3 className="text-3xl font-bold text-gray-900 mb-6 leading-tight">
+                  Make <span className="text-purple-600">data-driven decisions</span>
+                </h3>
+                <p className="text-gray-700 mb-8 leading-relaxed">
+                  Access comprehensive analytics and insights about your client interactions. Track conversion rates,
+                  identify top-performing treatments, and optimize your spa's revenue strategy with actionable
+                  intelligence.
+                </p>
+                <Button className="neon-purple text-white font-semibold">Explore Analytics</Button>
+              </div>
+              <div className="relative">
+                <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-md">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-sm text-gray-600 font-medium">Performance Analytics</span>
+                    <div className="text-xs text-blue-600 font-medium">This Month</div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="p-3 bg-gray-50 rounded text-gray-900 border border-gray-200">
+                      <div className="text-sm font-semibold">Top Treatment: Botox</div>
+                      <div className="text-xs text-gray-600 mt-1">85% conversion rate</div>
+                    </div>
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded text-gray-900">
+                      <div className="text-sm font-semibold">Revenue Trend</div>
+                      <div className="text-xs text-blue-600 mt-1">+32% increase this quarter</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      default:
+        return null
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-purple-50">
-      {/* Header */}
-      <header className="border-b border-gray-100 bg-white/80 backdrop-blur-md sticky top-0 z-50 transition-all duration-300">
-        <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3 group">
-            <div className="flex items-center space-x-1 transition-transform duration-300 group-hover:scale-110">
-              <div className="w-1.5 h-5 bg-purple-500 rounded-full animate-pulse"></div>
-              <div className="w-1.5 h-3 bg-purple-400 rounded-full animate-pulse delay-100"></div>
-              <div className="w-1.5 h-6 bg-purple-600 rounded-full animate-pulse delay-200"></div>
-              <div className="w-1.5 h-2 bg-purple-300 rounded-full animate-pulse delay-300"></div>
+    <div className="min-h-screen bg-white text-gray-900 font-poppins">
+      {/* Navigation */}
+      <nav className="border-b border-gray-200 bg-white">
+        <div className="container mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <img src="/images/wisp-logo.png" alt="WispAI" className="w-8 h-8" />
+              <div className="text-2xl font-bold text-gray-900 text-purple-600">WispAI</div>
             </div>
-            <span className="text-2xl font-bold text-gray-900 transition-colors duration-300">WISP AI</span>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Link href="/dashboard">
-              <Button
-                variant="ghost"
-                className="text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-300 hover:scale-105"
-              >
-                Login
-                
-              </Button>
-            </Link>
-            <Link href="/demo">
-              <Button className="bg-purple-600 hover:bg-purple-700 text-white font-semibold px-6 py-2 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 hover:-translate-y-0.5">
-                Book a Demo
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      {/* Hero Section */}
-      <section className="py-32 px-6 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-100/20 via-transparent to-blue-100/20"></div>
-        <div className="absolute top-20 left-10 w-72 h-72 bg-purple-200/30 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-200/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-
-        <div
-          className={`container mx-auto text-center max-w-5xl relative z-10 transition-all duration-1000 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-10"}`}
-        >
-          <div className="inline-block mb-8 px-6 py-3 bg-gradient-to-r from-purple-100 to-blue-100 rounded-full border border-purple-200/50 backdrop-blur-sm">
-            <p className="text-purple-700 text-lg font-medium">
-              ✨ Supercharge Your Aesthetic Consults with AI Voice Analytics
-            </p>
-          </div>
-
-          <h1 className="text-7xl md:text-9xl font-bold mb-8 leading-tight text-gray-900 bg-gradient-to-r from-gray-900 via-purple-900 to-gray-900 bg-clip-text text-transparent animate-fade-in">
-            Wisp AI
-          </h1>
-
-          <p className="text-xl text-gray-600 mb-12 max-w-4xl mx-auto leading-relaxed opacity-90">
-            The AI-powered coaching tool for aesthetic clinics. Wisp AI records and analyzes your front desk and
-            consultation conversations—giving you actionable insights that boost conversion rates, ticket sizes, and
-            patient satisfaction.
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-6 justify-center">
-            <Link href="/demo">
-              <Button className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold px-10 py-5 text-lg rounded-2xl shadow-2xl hover:shadow-purple-500/25 transition-all duration-300 hover:scale-105 hover:-translate-y-1 group">
-                Book a Demo
-                <ArrowRight className="ml-2 w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
-              </Button>
-            </Link>
-            <Link href="/dashboard">
+            <div className="hidden md:flex items-center space-x-4">
               <Button
                 variant="outline"
-                className="border-2 border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-purple-300 px-10 py-5 text-lg rounded-2xl bg-white/50 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:-translate-y-1 hover:shadow-lg"
+                className="border-gray-300 text-gray-700 hover:text-gray-900 hover:border-purple-400 font-semibold"
+                onClick={() => window.location.href = '/signin'}
               >
-                Login to Dashboard
+                Login
               </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Why Wisp AI Section */}
-      <section className="py-32 px-6 bg-gradient-to-br from-white via-gray-50 to-purple-50/30">
-        <div className="container mx-auto">
-          <div className="grid lg:grid-cols-2 gap-20 items-center">
-            <div className="space-y-8">
-              <h2 className="text-6xl md:text-7xl font-bold leading-tight text-gray-900">🎯 Why Wisp AI?</h2>
-              <div className="space-y-6 text-xl text-gray-600 leading-relaxed">
-                <p>
-                  In aesthetic medicine, every conversation matters. Whether it's your receptionist booking a client or
-                  a provider walking through treatment options, the way you speak can make or break a sale.
-                </p>
-                <p>
-                  Wisp AI gives aesthetic clinics 100% visibility into those conversations—so you can coach your team,
-                  improve outcomes, and grow revenue with data-backed precision.
-                </p>
-              </div>
-            </div>
-
-            <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-400 to-blue-400 rounded-3xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity duration-500"></div>
-              <div className="relative bg-white rounded-3xl p-8 border border-gray-100 shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-105 backdrop-blur-sm">
-                <div className="space-y-6">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-gradient-to-r from-purple-100 to-purple-200 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                      <Mic className="w-6 h-6 text-purple-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500 font-medium">AI Summary</p>
-                      <p className="text-gray-900 font-semibold text-lg">Botox consultation completed</p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    {["Treatment options discussed", "Pricing presented clearly", "Follow-up scheduled"].map(
-                      (item, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center justify-between p-3 rounded-xl bg-gray-50 hover:bg-green-50 transition-colors duration-300"
-                        >
-                          <span className="text-gray-700">• {item}</span>
-                          <span className="text-green-600 font-bold">✓</span>
-                        </div>
-                      ),
-                    )}
-                  </div>
-
-                  <div className="border-t border-gray-100 pt-6">
-                    <p className="text-sm text-gray-500 mb-3 font-medium">Sarah Johnson (Provider)</p>
-                    <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-                      <div
-                        className="bg-gradient-to-r from-purple-500 to-purple-600 h-3 rounded-full transition-all duration-1000 ease-out"
-                        style={{ width: "85%" }}
-                      ></div>
-                    </div>
-                    <p className="text-sm text-gray-600 mt-2 font-medium">Conversion Score: 85%</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section className="py-32 px-6 bg-gradient-to-br from-purple-50/50 via-white to-blue-50/30">
-        <div className="container mx-auto text-center">
-          <h2 className="text-6xl md:text-7xl font-bold mb-24 text-gray-900">🧠 How It Works</h2>
-
-          <div className="grid md:grid-cols-3 gap-12">
-            {[
-              {
-                icon: Mic,
-                title: "Record Conversations — Seamlessly",
-                description:
-                  "Set up lightweight audio capture from iPads or mobile devices. Wisp runs in the background—no new apps or clunky hardware needed.",
-                bgColor: "from-blue-50 to-blue-100",
-                iconColor: "text-blue-600",
-              },
-              {
-                icon: BarChart3,
-                title: "AI-Powered Transcription & Analysis",
-                description:
-                  "Our system automatically transcribes the conversation and flags key moments: pricing objections, missed upsells, tone shifts, and more.",
-                bgColor: "from-purple-50 to-purple-100",
-                iconColor: "text-purple-600",
-              },
-              {
-                icon: Users,
-                title: "Track Performance & Coach Smarter",
-                description:
-                  "Weekly reports show how your team is performing. Spot trends, highlight top performers, and provide tailored coaching with real examples.",
-                bgColor: "from-green-50 to-green-100",
-                iconColor: "text-green-600",
-              },
-            ].map((item, index) => (
-              <div key={index} className="group hover:scale-105 transition-all duration-500">
-                <div
-                  className={`w-28 h-28 bg-gradient-to-r ${item.bgColor} rounded-3xl mx-auto mb-8 flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:-translate-y-2`}
-                >
-                  <item.icon
-                    className={`w-14 h-14 ${item.iconColor} group-hover:scale-110 transition-transform duration-300`}
-                  />
-                </div>
-                <h3 className="text-2xl font-bold mb-6 text-gray-900 group-hover:text-purple-700 transition-colors duration-300">
-                  {item.title}
-                </h3>
-                <p className="text-gray-600 text-lg leading-relaxed">{item.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* What We Measure */}
-      <section className="py-32 px-6 bg-gradient-to-br from-gray-50 via-white to-purple-50/20">
-        <div className="container mx-auto max-w-5xl text-center">
-          <h2 className="text-5xl font-bold mb-16 text-gray-900">📊 What Wisp AI Measures</h2>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            {[
-              "Consult-to-booking conversion rate",
-              "Talk-to-listen ratio",
-              "Objection handling effectiveness",
-              "Upsell opportunities captured",
-              "Script/treatment menu adherence",
-              "Team performance across locations",
-            ].map((metric, index) => (
-              <div
-                key={index}
-                className="flex items-center space-x-4 p-6 rounded-2xl bg-white border border-gray-100 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 hover:-translate-y-1 group"
+              <Button
+                className="neon-purple text-white font-semibold"
+                onClick={() => window.open("https://calendly.com/adimahna/30min", "_blank")}
               >
-                <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 group-hover:scale-110 transition-transform duration-300" />
-                <span className="text-gray-700 text-lg font-medium">{metric}</span>
-              </div>
-            ))}
+                Book Demo
+              </Button>
+            </div>
           </div>
         </div>
-      </section>
+      </nav>
 
-
-      {/* CTA Section */}
-      <section className="py-32 px-6 bg-gradient-to-r from-purple-600 via-purple-700 to-purple-800 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-purple-600/90 to-purple-800/90"></div>
-        <div className="absolute top-0 left-0 w-full h-full">
-          <div className="absolute top-20 left-20 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
-          <div className="absolute bottom-20 right-20 w-80 h-80 bg-white/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        </div>
-
-        <div className="container mx-auto max-w-4xl text-center relative z-10">
-          <h2 className="text-5xl font-bold mb-8 text-white">👀 Want Early Access?</h2>
-          <p className="text-xl mb-8 text-purple-100">
-            We're currently working with a small group of aesthetic clinics to shape the product.
+      {/* Hero Section */}
+      <section className="bg-white py-20">
+        <div className="container mx-auto px-4 text-center">
+          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+            Turn client conversations into <span className="text-purple-600">revenue intelligence.</span>
+          </h1>
+          <p className="text-xl text-gray-700 mb-8 max-w-3xl mx-auto leading-relaxed">
+            Transform every consultation, treatment discussion, and follow-up into actionable insights that boost your
+            medical spa's revenue and client satisfaction.
           </p>
-          <p className="text-lg mb-12 text-purple-100">
-            If you're interested in increasing your conversion rates and gaining insights into every conversation
-            happening in your business—
-          </p>
-
-          <Link href="/demo">
+          <div className="flex justify-center">
             <Button
               size="lg"
-              className="bg-white text-purple-700 hover:bg-gray-100 px-12 py-6 text-xl font-bold rounded-2xl shadow-2xl hover:shadow-white/25 transition-all duration-300 hover:scale-105 hover:-translate-y-1 group"
+              className="neon-purple text-white px-8 py-3 font-semibold"
+              onClick={() => window.open("https://calendly.com/adimahna/30min", "_blank")}
             >
-              👉 Join our early pilot waitlist
-              <ArrowRight className="ml-3 w-6 h-6 transition-transform duration-300 group-hover:translate-x-1" />
-            </Button>
-          </Link>
+                Book a Demo
+              </Button>
+          </div>
 
-          <p className="text-sm mt-8 text-purple-200">We'll reach out with next steps and onboarding details.</p>
+          {/* Visual Flow Diagram */}
+          <div className="mt-16 relative max-w-5xl mx-auto">
+            <div className="flex items-center justify-between">
+              {/* Left side - Profile connections */}
+              <div className="flex flex-col space-y-8">
+                {/* Profile 1 */}
+                <div className="flex items-center space-x-4">
+                  <div className="w-16 h-16 rounded-full overflow-hidden border-3 border-purple-500 shadow-lg">
+                    <img src="/images/profile1.png" alt="Initial consultation" className="w-full h-full object-cover" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900">Initial Consultation</div>
+                    <div className="text-xs text-gray-600">Treatment Planning</div>
+                  </div>
+                </div>
+
+                {/* Profile 2 */}
+                <div className="flex items-center space-x-4">
+                  <div className="w-16 h-16 rounded-full overflow-hidden border-3 border-purple-500 shadow-lg">
+                    <img src="/images/profile2.png" alt="Follow-up meeting" className="w-full h-full object-cover" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900">Follow-up Meeting</div>
+                    <div className="text-xs text-gray-600">Progress Review</div>
+                  </div>
+                </div>
+
+                {/* Profile 3 */}
+                <div className="flex items-center space-x-4">
+                  <div className="w-16 h-16 rounded-full overflow-hidden border-3 border-purple-500 shadow-lg">
+                    <img src="/images/profile3.png" alt="Treatment session" className="w-full h-full object-cover" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-gray-900">Treatment Session</div>
+                    <div className="text-xs text-gray-600">Service Delivery</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Curved connecting lines */}
+              <div className="flex-1 relative h-64 mx-8">
+                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 200">
+                  <path
+                    d="M 20 50 Q 100 30 180 100"
+                    stroke="rgba(139, 92, 246, 0.6)"
+                    strokeWidth="2"
+                    fill="none"
+                    strokeDasharray="5,5"
+                  />
+                  <path
+                    d="M 20 100 Q 100 100 180 100"
+                    stroke="rgba(139, 92, 246, 0.8)"
+                    strokeWidth="2"
+                    fill="none"
+                    strokeDasharray="5,5"
+                  />
+                  <path
+                    d="M 20 150 Q 100 170 180 100"
+                    stroke="rgba(139, 92, 246, 0.6)"
+                    strokeWidth="2"
+                    fill="none"
+                    strokeDasharray="5,5"
+                  />
+                </svg>
+              </div>
+
+              {/* Center - AI Processing */}
+              <div className="flex flex-col items-center space-y-4">
+                {/* Sound wave visualization */}
+                <div className="flex items-center space-x-1 mb-2">
+                  <div className="w-1 bg-purple-400 rounded-full animate-pulse" style={{ height: "16px" }}></div>
+                  <div
+                    className="w-1 bg-purple-500 rounded-full animate-pulse"
+                    style={{ height: "24px", animationDelay: "0.1s" }}
+                  ></div>
+                  <div
+                    className="w-1 bg-purple-400 rounded-full animate-pulse"
+                    style={{ height: "20px", animationDelay: "0.2s" }}
+                  ></div>
+                  <div
+                    className="w-1 bg-purple-600 rounded-full animate-pulse"
+                    style={{ height: "28px", animationDelay: "0.3s" }}
+                  ></div>
+                  <div
+                    className="w-1 bg-purple-500 rounded-full animate-pulse"
+                    style={{ height: "22px", animationDelay: "0.4s" }}
+                  ></div>
+                </div>
+
+                <div className="w-20 h-20 bg-purple-600 rounded-2xl flex items-center justify-center shadow-2xl p-2">
+                  <img src="/images/wisp-logo.png" alt="WispAI Logo" className="w-16 h-16 object-contain" />
+                </div>
+                <span className="text-sm text-gray-700 font-medium">Revenue Intelligence</span>
+              </div>
+
+              {/* Curved connecting lines to dashboard */}
+              <div className="flex-1 relative h-64 mx-8">
+                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 200">
+                  <path
+                    d="M 20 100 Q 100 100 180 100"
+                    stroke="rgba(139, 92, 246, 0.8)"
+                    strokeWidth="2"
+                    fill="none"
+                    strokeDasharray="5,5"
+                  />
+                </svg>
+              </div>
+
+              {/* Right side - Dashboard */}
+              <div className="bg-gray-100 rounded-xl p-6 border border-gray-200 shadow-md w-80">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm text-gray-700 font-semibold">Revenue Analytics</span>
+                  <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-white rounded-lg">
+                    <span className="text-sm text-gray-900">Upsell Opportunities</span>
+                    <span className="text-purple-600 font-bold">$12K</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-white rounded-lg">
+                    <span className="text-sm text-gray-900">Conversion Rate</span>
+                    <span className="text-green-600 font-bold">+23%</span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-purple-50 border border-purple-200 rounded-lg">
+                    <span className="text-sm text-gray-900">Revenue Boost</span>
+                    <span className="text-purple-600 font-bold">$45K</span>
+                  </div>
+                </div>
+
+                <div className="mt-4 pt-3 border-t border-gray-300">
+                  <div className="text-xs text-gray-600 mb-1">Live Insights</div>
+                  <div className="text-xs text-purple-600">"Client interested in premium package..."</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Dark Hero Section (now light) */}
+      <section className="bg-gray-100 text-gray-900 py-20">
+        <div className="container mx-auto px-4">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+                Unlock insights from every <span className="text-purple-600">client interaction.</span>
+              </h2>
+              <p className="text-xl text-gray-700 mb-8 leading-relaxed">
+                Record and analyze client consultations to identify upsell opportunities, improve treatment
+                recommendations, and maximize revenue per visit.
+              </p>
+              <div className="flex justify-center">
+                <Button
+                  size="lg"
+                  className="neon-purple text-white font-semibold"
+                  onClick={() => window.open("https://calendly.com/adimahna/30min", "_blank")}
+                >
+                  Book a Demo
+                </Button>
+              </div>
+            </div>
+            <div className="relative">
+              <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-md">
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm text-gray-600 font-medium">Client Consultation Analysis</span>
+                  <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse shadow-lg shadow-purple-500/20"></div>
+                    </div>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                    <span className="text-sm text-gray-900">03:02 - Treatment Discussion</span>
+                    <Clock className="w-4 h-4 text-gray-600" />
+                    </div>
+                  <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                    <span className="text-sm text-gray-900">15:34 - Upsell Opportunity</span>
+                    <TrendingUp className="w-4 h-4 text-purple-600" />
+                  </div>
+                  <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                    <span className="text-sm text-gray-900">45:08 - Follow-up Scheduling</span>
+                    <Calendar className="w-4 h-4 text-gray-600" />
+                  </div>
+                  <div className="flex justify-between items-center p-2 bg-purple-50 border border-purple-200 rounded">
+                    <span className="text-sm text-gray-900">1:27:45 Revenue Opportunity</span>
+                    <span className="text-purple-600 font-bold">$2,400</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="bg-white py-16">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-3 gap-8">
+            <Card className="bg-gray-100 border-gray-200 text-center p-8 hover:border-purple-300 transition-colors">
+              <CardContent className="p-0">
+                <div className="w-12 h-12 bg-purple-100 border border-purple-300 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Zap className="w-6 h-6 text-purple-600" />
+                </div>
+                <div className="text-4xl font-bold text-purple-600 mb-2">Up to 2x</div>
+                <div className="text-gray-900 font-semibold mb-2">Boosted Operational Efficiency</div>
+                <div className="text-gray-600 text-sm">
+                  Streamline workflows and save valuable time in daily operations
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gray-100 border-gray-200 text-center p-8 hover:border-purple-300 transition-colors">
+              <CardContent className="p-0">
+                <div className="w-12 h-12 bg-purple-100 border border-purple-300 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <BarChart3 className="w-6 h-6 text-purple-600" />
+                </div>
+                <div className="text-4xl font-bold text-purple-600 mb-2">Significant</div>
+                <div className="text-gray-900 font-semibold mb-2">Enhanced Client Engagement</div>
+                <div className="text-gray-600 text-sm">
+                  Improve interactions and foster stronger client relationships
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gray-100 border-gray-200 text-center p-8 hover:border-purple-300 transition-colors">
+              <CardContent className="p-0">
+                <div className="w-12 h-12 bg-purple-100 border border-purple-300 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Star className="w-6 h-6 text-purple-600" />
+              </div>
+                <div className="text-4xl font-bold text-purple-600 mb-2">Increased</div>
+                <div className="text-gray-900 font-semibold mb-2">Elevated Client Satisfaction</div>
+                <div className="text-gray-600 text-sm">Deliver personalized experiences that delight your clients</div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section id="features" className="bg-gray-100 py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4 leading-tight">
+              Learn from every conversation. <span className="text-purple-600">Boost every sale.</span>
+            </h2>
+            <div className="flex justify-center space-x-8 mt-8">
+              <button
+                onClick={() => setActiveTab("visibility")}
+                className={`pb-2 px-4 font-semibold transition-colors ${
+                  activeTab === "visibility"
+                    ? "text-gray-900 border-b-2 border-purple-500"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                VISIBILITY
+              </button>
+              <button
+                onClick={() => setActiveTab("coaching")}
+                className={`pb-2 px-4 font-semibold transition-colors ${
+                  activeTab === "coaching"
+                    ? "text-gray-900 border-b-2 border-purple-500"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                COACHING
+              </button>
+              <button
+                onClick={() => setActiveTab("intelligence")}
+                className={`pb-2 px-4 font-semibold transition-colors ${
+                  activeTab === "intelligence"
+                    ? "text-gray-900 border-b-2 border-purple-500"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                INTELLIGENCE
+              </button>
+            </div>
+          </div>
+
+          {renderFeatureContent()}
+        </div>
+      </section>
+
+      {/* New Section: Discover the Impact (replaces "Real Results") */}
+      <section id="results" className="bg-white py-20">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">
+            Discover the <span className="text-purple-600">WispAI Impact</span>
+          </h2>
+          <p className="text-gray-700 mb-12">See how WispAI can transform your medical spa's potential.</p>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            <Card className="bg-gray-100 border border-gray-200 p-6 rounded-lg shadow-sm">
+              <CardContent className="p-0 flex flex-col items-center text-center">
+                <div className="w-12 h-12 bg-purple-100 border border-purple-300 rounded-full flex items-center justify-center mb-4">
+                  <Lightbulb className="w-6 h-6 text-purple-600" />
+                </div>
+                <h3 className="font-semibold text-gray-900 text-lg mb-2">Actionable Insights</h3>
+                <p className="text-gray-700 text-sm">
+                  Uncover hidden opportunities in every client interaction to drive growth.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gray-100 border border-gray-200 p-6 rounded-lg shadow-sm">
+              <CardContent className="p-0 flex flex-col items-center text-center">
+                <div className="w-12 h-12 bg-purple-100 border border-purple-300 rounded-full flex items-center justify-center mb-4">
+                  <Users className="w-6 h-6 text-purple-600" />
+                </div>
+                <h3 className="font-semibold text-gray-900 text-lg mb-2">Empowered Team</h3>
+                <p className="text-gray-700 text-sm">
+                  Equip your staff with the tools to enhance client engagement and sales performance.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gray-100 border border-gray-200 p-6 rounded-lg shadow-sm">
+              <CardContent className="p-0 flex flex-col items-center text-center">
+                <div className="w-12 h-12 bg-purple-100 border border-purple-300 rounded-full flex items-center justify-center mb-4">
+                  <DollarSign className="w-6 h-6 text-purple-600" />
+                </div>
+                <h3 className="font-semibold text-gray-900 text-lg mb-2">Maximized Revenue</h3>
+                <p className="text-gray-700 text-sm">
+                  Optimize your service offerings and pricing strategies for greater profitability.
+                </p>
+              </CardContent>
+            </Card>
+              </div>
+
+          <div className="mt-12">
+            <Button className="neon-purple text-white px-8 py-3 font-semibold">Learn More About Our Impact</Button>
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section id="faq" className="py-20 bg-gray-100">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Frequently Asked <span className="text-purple-600">Questions</span>
+            </h2>
+            <p className="text-xl text-gray-700">Everything you need to know about WispAI</p>
+          </div>
+
+          <div className="max-w-3xl mx-auto">
+            <Accordion type="single" collapsible className="space-y-4">
+              <AccordionItem value="item-1" className="border border-gray-200 bg-white rounded-lg px-6">
+                <AccordionTrigger className="text-left font-semibold text-gray-900 hover:text-purple-600 transition-colors">
+                  What is WispAI and how can it help my medical spa?
+                </AccordionTrigger>
+                <AccordionContent className="text-gray-700">
+                  WispAI is an AI-powered platform designed to analyze client conversations and provide actionable
+                  insights to boost your medical spa's revenue. It helps identify upsell opportunities, improve
+                  treatment recommendations, and enhance overall client satisfaction.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-2" className="border border-gray-200 bg-white rounded-lg px-6">
+                <AccordionTrigger className="text-left font-semibold text-gray-900 hover:text-purple-600 transition-colors">
+                  How does WispAI ensure data privacy and security?
+                </AccordionTrigger>
+                <AccordionContent className="text-gray-700">
+                  We prioritize data privacy and security with robust encryption protocols and secure data handling
+                  practices. All client information is processed and stored with the utmost care to ensure
+                  confidentiality and integrity.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-3" className="border border-gray-200 bg-white rounded-lg px-6">
+                <AccordionTrigger className="text-left font-semibold text-gray-900 hover:text-purple-600 transition-colors">
+                  What kind of support does WispAI offer?
+                </AccordionTrigger>
+                <AccordionContent className="text-gray-700">
+                  WispAI provides comprehensive support including initial onboarding, training sessions for your staff,
+                  and ongoing technical assistance. Our team is dedicated to ensuring you get the most out of our
+                  platform.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-4" className="border border-gray-200 bg-white rounded-lg px-6">
+                <AccordionTrigger className="text-left font-semibold text-gray-900 hover:text-purple-600 transition-colors">
+                  Is WispAI compatible with my existing systems?
+                </AccordionTrigger>
+                <AccordionContent className="text-gray-700">
+                  WispAI is designed for seamless integration with many popular medical spa management and booking
+                  systems. During your demo, we can discuss your specific setup and ensure compatibility.
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-5" className="border border-gray-200 bg-white rounded-lg px-6">
+                <AccordionTrigger className="text-left font-semibold text-gray-900 hover:text-purple-600 transition-colors">
+                  How long does it take to set up WispAI?
+                </AccordionTrigger>
+                <AccordionContent className="text-gray-700">
+                  Setup is quick and straightforward. Our team will guide you through the process, which typically takes
+                  just a few hours to get your account configured and ready to start analyzing conversations.
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="bg-white py-20">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-4xl font-bold text-gray-900 mb-6 leading-tight">
+            Ready to boost your <span className="text-purple-600">medical spa revenue?</span>
+          </h2>
+          <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto leading-relaxed">
+            Join hundreds of medical spas already using our platform to increase revenue, improve client satisfaction,
+            and grow their business.
+          </p>
+          <div className="flex justify-center">
+            <Button
+              size="lg"
+              className="neon-purple text-white px-8 py-3 font-semibold"
+              onClick={() => window.open("https://calendly.com/adimahna/30min", "_blank")}
+            >
+              Book Your Demo Today
+            </Button>
+          </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-16 px-6 border-t border-gray-100 bg-gradient-to-br from-white to-gray-50">
-        <div className="container mx-auto text-center">
-          <div className="flex items-center justify-center space-x-3 mb-8 group">
-            <div className="flex items-center space-x-1 transition-transform duration-300 group-hover:scale-110">
-              <div className="w-1.5 h-5 bg-purple-500 rounded-full"></div>
-              <div className="w-1.5 h-3 bg-purple-400 rounded-full"></div>
-              <div className="w-1.5 h-6 bg-purple-600 rounded-full"></div>
-              <div className="w-1.5 h-2 bg-purple-300 rounded-full"></div>
+      <footer className="bg-gray-100 py-12 border-t border-gray-200">
+        <div className="container mx-auto px-4">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div>
+              <div className="flex items-center space-x-3 mb-4">
+                <img src="/images/wisp-logo.png" alt="WispAI" className="w-6 h-6" />
+                <div className="text-2xl font-bold text-gray-900 text-purple-600">WispAI</div>
+              </div>
+              <p className="text-gray-600">Transforming medical spa conversations into revenue intelligence.</p>
             </div>
-            <span className="text-2xl font-bold text-gray-900">WISP AI</span>
+            <div>
+              <h4 className="text-gray-900 font-semibold mb-4">Product</h4>
+              <ul className="space-y-2 text-gray-600">
+                <li>
+                  <a href="#" className="hover:text-purple-600 transition-colors">
+                    Features
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-purple-600 transition-colors">
+                    Pricing
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-purple-600 transition-colors">
+                    Integrations
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-gray-900 font-semibold mb-4">Company</h4>
+              <ul className="space-y-2 text-gray-600">
+                <li>
+                  <a href="#" className="hover:text-purple-600 transition-colors">
+                    About
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-purple-600 transition-colors">
+                    Contact
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-purple-600 transition-colors">
+                    Support
+                  </a>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-gray-900 font-semibold mb-4">Legal</h4>
+              <ul className="space-y-2 text-gray-600">
+                <li>
+                  <a href="#" className="hover:text-purple-600 transition-colors">
+                    Privacy
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-purple-600 transition-colors">
+                    Terms
+                  </a>
+                </li>
+                <li>
+                  <a href="#" className="hover:text-purple-600 transition-colors">
+                    Data Policy
+                  </a>
+                </li>
+              </ul>
+            </div>
           </div>
-          <p className="text-gray-500 text-lg">© 2025 Wisp AI. All rights reserved.</p>
+          <div className="border-t border-gray-200 mt-8 pt-8 text-center text-gray-600">
+            <p>&copy; 2025 WispAI. All rights reserved.</p>
+          </div>
         </div>
       </footer>
     </div>
