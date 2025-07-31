@@ -43,7 +43,8 @@ import { calculateSalesPerformanceAverages, getSalesPerformanceInsights } from "
 // Authorized email list
 const AUTHORIZED_EMAILS = [
   'adimahna@gmail.com',
-  'Vverma@revive.md'
+  'Vverma@revive.md',
+  'vverma@revive.md'
 ];
 
 // Category definitions for med spa consultation protocol analysis
@@ -529,7 +530,7 @@ export default function Dashboard() {
         const isEmailAuthorized = AUTHORIZED_EMAILS.includes(user.email);
         if (!isEmailAuthorized) {
           console.log('🚫 Unauthorized user access attempt:', user.email);
-          router.push('/');
+          router.push('/signin'); // Redirect to signin page
           return;
         }
 
@@ -556,6 +557,21 @@ export default function Dashboard() {
     checkUserInFirestore()
   }, [user, authLoading, router])
 
+  // Check if user email is authorized (redundant check for immediate feedback before useEffect redirect)
+  if (user) {
+    const isEmailAuthorized = AUTHORIZED_EMAILS.includes(user.email);
+    if (!isEmailAuthorized) {
+      router.push('/signin');
+      return (
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+          <div className="text-center">
+            <h1 className="text-xl font-bold text-foreground mb-2">🚫 Unauthorized User</h1>
+            <p className="text-muted-foreground">Redirecting to signin page...</p>
+          </div>
+        </div>
+      );
+    }
+  }
 
   // Chat functions
 
@@ -3677,31 +3693,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* General Transcript */}
-                <div className="mb-8">
-                  <h4 className="text-xl font-bold text-slate-900 mb-6">Full Transcript</h4>
-                  <div className="p-6 bg-slate-50 rounded-xl border border-slate-200">
-                    <p 
-                      className="text-slate-700 leading-relaxed select-text cursor-text text-base"
-                      onMouseUp={() => {
-                        const selection = window.getSelection()
-                        if (selection && selection.toString().trim()) {
-                          const selectedText = selection.toString().trim()
-                          const range = selection.getRangeAt(0)
-                          setHighlightedText({
-                            text: selectedText,
-                            speaker: 'Full Transcript',
-                            entryIndex: -1, // Use -1 to indicate full transcript
-                            startIndex: range.startOffset,
-                            endIndex: range.endOffset
-                          })
-                        }
-                      }}
-                    >
-                      {selectedTranscript.transcript || 'No transcript available'}
-                    </p>
-                  </div>
-                </div>
+
 
                 {/* Notes Section */}
                 {selectedTranscript.notes && (
