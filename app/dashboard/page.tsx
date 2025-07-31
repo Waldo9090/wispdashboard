@@ -76,6 +76,7 @@ interface TimestampData {
   durationSeconds: number
   emoji: string
   name: string
+  transcriptName?: string
   notes: string
   speakerTranscript: Array<{
     speaker: string
@@ -1602,6 +1603,12 @@ export default function Dashboard() {
             // Use the same centralized decryption approach as TRACKERS tab
             let displayName = timestampData.name || `User-${documentId.substring(0, 8)}`
             
+            // Get transcript name from analytics cache if available
+            let transcriptName = 'Untitled Transcript'
+            if (analyticsCache[documentId] && analyticsCache[documentId].transcriptName) {
+              transcriptName = analyticsCache[documentId].transcriptName
+            }
+            
             // Debug: log the available data
             console.log(`🔍 Debug for ${documentId}:`, {
               hasParentData: !!parentTranscriptData,
@@ -1657,6 +1664,7 @@ export default function Dashboard() {
               durationSeconds: timestampData.durationSeconds || 0,
               emoji: timestampData.emoji || '❓',
               name: displayName, // Use centralized decryption result
+              transcriptName: transcriptName, // Add transcript name from analytics
               notes: timestampData.notes || '',
               speakerTranscript: speakerTranscriptData,
               status: timestampData.status || 'unknown',
@@ -1694,9 +1702,16 @@ export default function Dashboard() {
         }))
       })
       
-      setTimestampData(timestampsData)
+      // Sort transcripts by timestamp (most recent first)
+      const sortedTimestampsData = timestampsData.sort((a, b) => {
+        const timeA = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(a.timestamp || 0)
+        const timeB = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(b.timestamp || 0)
+        return timeB.getTime() - timeA.getTime()
+      })
+      
+      setTimestampData(sortedTimestampsData)
       // Apply current filters to the new data
-      let filtered = timestampsData
+      let filtered = sortedTimestampsData
       if (selectedLocationFilter !== 'all') {
         filtered = filtered.filter(t => t.locationId === selectedLocationFilter)
       }
@@ -3723,12 +3738,6 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                {/* Debug Section - Remove this after testing */}
-                <div className="mb-8 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-                  <h4 className="text-lg font-bold text-yellow-800 mb-2">Debug Info</h4>
-                  <p className="text-sm text-yellow-700">Has salesPerformance: {selectedTranscript.salesPerformance ? 'YES' : 'NO'}</p>
-                  <p className="text-sm text-yellow-700">salesPerformance data: {JSON.stringify(selectedTranscript.salesPerformance, null, 2)}</p>
-                </div>
 
                 {/* Sales Performance Section */}
                 {selectedTranscript.salesPerformance && (
