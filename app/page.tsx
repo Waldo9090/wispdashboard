@@ -171,21 +171,14 @@ export default function MedicalSpaLanding() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-left">
               <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                Turn client conversations into <span className="text-purple-600">revenue intelligence.</span>
+                Turn consultations into <span className="text-purple-600">revenue intelligence.</span>
               </h1>
               <p className="text-xl text-gray-700 mb-8 max-w-3xl mx-auto leading-relaxed">
                 Transform every consultation, treatment discussion, and follow-up into actionable insights that boost
                 your medical spa's revenue and client satisfaction.
               </p>
                         <div className="flex justify-start gap-4">
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-gray-300 text-gray-700 hover:text-gray-900 hover:border-purple-400 px-8 py-4 text-lg font-semibold"
-              onClick={() => window.location.href = '/signin'}
-            >
-              Login
-            </Button>
+
             <Button
               size="lg"
               className="neon-purple text-white px-12 py-4 text-lg font-semibold"
@@ -242,14 +235,7 @@ export default function MedicalSpaLanding() {
                 >
                   Book a Demo
                 </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="border-gray-300 text-gray-700 hover:text-gray-900 hover:bg-gray-50 bg-transparent font-semibold"
-                >
-                  <MessageSquare className="w-4 h-4 mr-2" />
-                  See How It Works
-                </Button>
+
               </div>
             </div>
             <div className="relative">
@@ -417,9 +403,7 @@ export default function MedicalSpaLanding() {
             </Card>
           </div>
 
-          <div className="mt-12">
-            <Button className="neon-purple text-white px-8 py-3 font-semibold">Learn More About Our Impact</Button>
-          </div>
+
         </div>
       </section>
 
@@ -510,13 +494,7 @@ export default function MedicalSpaLanding() {
             >
               Book Your Demo Today
             </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-gray-300 text-gray-700 hover:text-gray-900 hover:bg-gray-50 px-8 py-3 bg-transparent font-semibold"
-            >
-              View Pricing Plans
-            </Button>
+
           </div>
         </div>
       </section>
