@@ -96,7 +96,7 @@ export default function MedicalSpaLanding() {
           </div>
         )
       case "intelligence":
-  return (
+        return (
           <div className="bg-gray-100 rounded-lg p-12 border border-gray-200">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div>
@@ -136,7 +136,6 @@ export default function MedicalSpaLanding() {
         return null
     }
   }
-
   return (
     <div className="min-h-screen bg-white text-gray-900 font-poppins">
       {/* Navigation */}
@@ -168,158 +167,55 @@ export default function MedicalSpaLanding() {
 
       {/* Hero Section */}
       <section className="bg-white py-20">
-        <div className="container mx-auto px-4 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-            Turn client conversations into <span className="text-purple-600">revenue intelligence.</span>
-          </h1>
-          <p className="text-xl text-gray-700 mb-8 max-w-3xl mx-auto leading-relaxed">
-            Transform every consultation, treatment discussion, and follow-up into actionable insights that boost your
-            medical spa's revenue and client satisfaction.
-          </p>
-          <div className="flex justify-center">
+        <div className="container mx-auto px-4">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="text-left">
+              <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+                Turn client conversations into <span className="text-purple-600">revenue intelligence.</span>
+              </h1>
+              <p className="text-xl text-gray-700 mb-8 max-w-3xl mx-auto leading-relaxed">
+                Transform every consultation, treatment discussion, and follow-up into actionable insights that boost
+                your medical spa's revenue and client satisfaction.
+              </p>
+                        <div className="flex justify-start gap-4">
             <Button
               size="lg"
-              className="neon-purple text-white px-8 py-3 font-semibold"
+              variant="outline"
+              className="border-gray-300 text-gray-700 hover:text-gray-900 hover:border-purple-400 px-8 py-4 text-lg font-semibold"
+              onClick={() => window.location.href = '/signin'}
+            >
+              Login
+            </Button>
+            <Button
+              size="lg"
+              className="neon-purple text-white px-12 py-4 text-lg font-semibold"
               onClick={() => window.open("https://calendly.com/adimahna/30min", "_blank")}
             >
                 Book a Demo
-              </Button>
+            </Button>
           </div>
+            </div>
 
-          {/* Visual Flow Diagram */}
-          <div className="mt-16 relative max-w-5xl mx-auto">
-            <div className="flex items-center justify-between">
-              {/* Left side - Profile connections */}
-              <div className="flex flex-col space-y-8">
-                {/* Profile 1 */}
-                <div className="flex items-center space-x-4">
-                  <div className="w-16 h-16 rounded-full overflow-hidden border-3 border-purple-500 shadow-lg">
-                    <img src="/images/profile1.png" alt="Initial consultation" className="w-full h-full object-cover" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-gray-900">Initial Consultation</div>
-                    <div className="text-xs text-gray-600">Treatment Planning</div>
-                  </div>
-                </div>
+            <div className="relative w-full h-[400px] md:h-[500px] lg:h-[600px] rounded-xl overflow-hidden shadow-lg bg-gray-200">
+              <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
+                <source src="/videos/videotalking.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+              {/* Gradient overlay for blurbs readability */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-transparent"></div>
 
-                {/* Profile 2 */}
-                <div className="flex items-center space-x-4">
-                  <div className="w-16 h-16 rounded-full overflow-hidden border-3 border-purple-500 shadow-lg">
-                    <img src="/images/profile2.png" alt="Follow-up meeting" className="w-full h-full object-cover" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-gray-900">Follow-up Meeting</div>
-                    <div className="text-xs text-gray-600">Progress Review</div>
-                  </div>
-                </div>
-
-                {/* Profile 3 */}
-                <div className="flex items-center space-x-4">
-                  <div className="w-16 h-16 rounded-full overflow-hidden border-3 border-purple-500 shadow-lg">
-                    <img src="/images/profile3.png" alt="Treatment session" className="w-full h-full object-cover" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold text-gray-900">Treatment Session</div>
-                    <div className="text-xs text-gray-600">Service Delivery</div>
-                  </div>
-                </div>
+              {/* Blurbs with animations */}
+              <div className="absolute top-1/4 left-1/4 bg-gray-800 text-white px-4 py-2 rounded-full text-sm animate-fade-in-left animate-delay-300">
+                What could be done better?
               </div>
-
-              {/* Curved connecting lines */}
-              <div className="flex-1 relative h-64 mx-8">
-                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 200">
-                  <path
-                    d="M 20 50 Q 100 30 180 100"
-                    stroke="rgba(139, 92, 246, 0.6)"
-                    strokeWidth="2"
-                    fill="none"
-                    strokeDasharray="5,5"
-                  />
-                  <path
-                    d="M 20 100 Q 100 100 180 100"
-                    stroke="rgba(139, 92, 246, 0.8)"
-                    strokeWidth="2"
-                    fill="none"
-                    strokeDasharray="5,5"
-                  />
-                  <path
-                    d="M 20 150 Q 100 170 180 100"
-                    stroke="rgba(139, 92, 246, 0.6)"
-                    strokeWidth="2"
-                    fill="none"
-                    strokeDasharray="5,5"
-                  />
-                </svg>
+              <div className="absolute top-1/2 right-1/4 bg-gray-800 text-white px-4 py-2 rounded-full text-sm animate-fade-in-right animate-delay-500">
+                02:15 – First Impressions
               </div>
-
-              {/* Center - AI Processing */}
-              <div className="flex flex-col items-center space-y-4">
-                {/* Sound wave visualization */}
-                <div className="flex items-center space-x-1 mb-2">
-                  <div className="w-1 bg-purple-400 rounded-full animate-pulse" style={{ height: "16px" }}></div>
-                  <div
-                    className="w-1 bg-purple-500 rounded-full animate-pulse"
-                    style={{ height: "24px", animationDelay: "0.1s" }}
-                  ></div>
-                  <div
-                    className="w-1 bg-purple-400 rounded-full animate-pulse"
-                    style={{ height: "20px", animationDelay: "0.2s" }}
-                  ></div>
-                  <div
-                    className="w-1 bg-purple-600 rounded-full animate-pulse"
-                    style={{ height: "28px", animationDelay: "0.3s" }}
-                  ></div>
-                  <div
-                    className="w-1 bg-purple-500 rounded-full animate-pulse"
-                    style={{ height: "22px", animationDelay: "0.4s" }}
-                  ></div>
-                </div>
-
-                <div className="w-20 h-20 bg-purple-600 rounded-2xl flex items-center justify-center shadow-2xl p-2">
-                  <img src="/images/wisp-logo.png" alt="WispAI Logo" className="w-16 h-16 object-contain" />
-                </div>
-                <span className="text-sm text-gray-700 font-medium">Revenue Intelligence</span>
+              <div className="absolute bottom-1/4 left-1/3 bg-gray-800 text-white px-4 py-2 rounded-full text-sm animate-fade-in-left animate-delay-700">
+                09:40 – Skin Goals
               </div>
-
-              {/* Curved connecting lines to dashboard */}
-              <div className="flex-1 relative h-64 mx-8">
-                <svg className="absolute inset-0 w-full h-full" viewBox="0 0 200 200">
-                  <path
-                    d="M 20 100 Q 100 100 180 100"
-                    stroke="rgba(139, 92, 246, 0.8)"
-                    strokeWidth="2"
-                    fill="none"
-                    strokeDasharray="5,5"
-                  />
-                </svg>
-              </div>
-
-              {/* Right side - Dashboard */}
-              <div className="bg-gray-100 rounded-xl p-6 border border-gray-200 shadow-md w-80">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-sm text-gray-700 font-semibold">Revenue Analytics</span>
-                  <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-                    <span className="text-sm text-gray-900">Upsell Opportunities</span>
-                    <span className="text-purple-600 font-bold">$12K</span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-white rounded-lg">
-                    <span className="text-sm text-gray-900">Conversion Rate</span>
-                    <span className="text-green-600 font-bold">+23%</span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                    <span className="text-sm text-gray-900">Revenue Boost</span>
-                    <span className="text-purple-600 font-bold">$45K</span>
-                  </div>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-gray-300">
-                  <div className="text-xs text-gray-600 mb-1">Live Insights</div>
-                  <div className="text-xs text-purple-600">"Client interested in premium package..."</div>
-                </div>
+              <div className="absolute bottom-1/6 right-1/6 bg-gray-800 text-white px-4 py-2 rounded-full text-sm animate-fade-in-right animate-delay-900">
+                18:22 – Treatment Education
               </div>
             </div>
           </div>
@@ -338,13 +234,21 @@ export default function MedicalSpaLanding() {
                 Record and analyze client consultations to identify upsell opportunities, improve treatment
                 recommendations, and maximize revenue per visit.
               </p>
-              <div className="flex justify-center">
+              <div className="flex flex-col sm:flex-row gap-4">
                 <Button
                   size="lg"
                   className="neon-purple text-white font-semibold"
                   onClick={() => window.open("https://calendly.com/adimahna/30min", "_blank")}
                 >
                   Book a Demo
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-gray-300 text-gray-700 hover:text-gray-900 hover:bg-gray-50 bg-transparent font-semibold"
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  See How It Works
                 </Button>
               </div>
             </div>
@@ -353,12 +257,12 @@ export default function MedicalSpaLanding() {
                 <div className="flex items-center justify-between mb-4">
                   <span className="text-sm text-gray-600 font-medium">Client Consultation Analysis</span>
                   <div className="w-3 h-3 bg-purple-500 rounded-full animate-pulse shadow-lg shadow-purple-500/20"></div>
-                    </div>
+                </div>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
                     <span className="text-sm text-gray-900">03:02 - Treatment Discussion</span>
                     <Clock className="w-4 h-4 text-gray-600" />
-                    </div>
+                  </div>
                   <div className="flex justify-between items-center p-2 bg-gray-50 rounded">
                     <span className="text-sm text-gray-900">15:34 - Upsell Opportunity</span>
                     <TrendingUp className="w-4 h-4 text-purple-600" />
@@ -412,7 +316,7 @@ export default function MedicalSpaLanding() {
               <CardContent className="p-0">
                 <div className="w-12 h-12 bg-purple-100 border border-purple-300 rounded-full flex items-center justify-center mx-auto mb-4">
                   <Star className="w-6 h-6 text-purple-600" />
-              </div>
+                </div>
                 <div className="text-4xl font-bold text-purple-600 mb-2">Increased</div>
                 <div className="text-gray-900 font-semibold mb-2">Elevated Client Satisfaction</div>
                 <div className="text-gray-600 text-sm">Deliver personalized experiences that delight your clients</div>
@@ -511,7 +415,7 @@ export default function MedicalSpaLanding() {
                 </p>
               </CardContent>
             </Card>
-              </div>
+          </div>
 
           <div className="mt-12">
             <Button className="neon-purple text-white px-8 py-3 font-semibold">Learn More About Our Impact</Button>
@@ -598,13 +502,20 @@ export default function MedicalSpaLanding() {
             Join hundreds of medical spas already using our platform to increase revenue, improve client satisfaction,
             and grow their business.
           </p>
-          <div className="flex justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
               size="lg"
               className="neon-purple text-white px-8 py-3 font-semibold"
               onClick={() => window.open("https://calendly.com/adimahna/30min", "_blank")}
             >
               Book Your Demo Today
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="border-gray-300 text-gray-700 hover:text-gray-900 hover:bg-gray-50 px-8 py-3 bg-transparent font-semibold"
+            >
+              View Pricing Plans
             </Button>
           </div>
         </div>
