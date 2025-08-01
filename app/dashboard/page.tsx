@@ -515,59 +515,42 @@ export default function Dashboard() {
   // Function to get total transcript count by counting timestamp documents
   const loadTotalTranscriptCount = async () => {
     try {
-      console.log('📊 Loading total transcript count by counting timestamp documents...')
+      console.log('📊 Loading total transcript count by counting timestamp subcollection documents...')
       
-      // Get all locations for the current chain
-      const urlParams = new URLSearchParams(window.location.search)
-      const chainParam = urlParams.get('chain') || 'Revive'
-      
-      // Get locations from API
-      const locationsResponse = await fetch(`/api/get-locations?chainId=${encodeURIComponent(chainParam)}`)
-      if (!locationsResponse.ok) {
-        console.error('❌ Failed to get locations from API')
-        return
-      }
-      
-      const locationsData = await locationsResponse.json()
-      if (!locationsData.success || !locationsData.locations) {
-        console.error('❌ Invalid locations data from API')
-        return
-      }
+      // Get all documents from the transcript collection
+      const transcriptRef = collection(db, 'transcript')
+      const transcriptSnap = await getDocs(transcriptRef)
       
       let totalCount = 0
       
-      // Count timestamp documents in each location
-      for (const location of locationsData.locations) {
+      console.log(`📊 Found ${transcriptSnap.size} transcript documents, counting their timestamp subcollections...`)
+      
+      // Go through each transcript document and count its timestamps subcollection
+      for (const transcriptDoc of transcriptSnap.docs) {
+        const docId = transcriptDoc.id
         try {
-          console.log(`📊 Counting timestamps for location: ${location.name}`)
+          console.log(`📊 Counting timestamps for transcript document: ${docId}`)
           
-          // Get document IDs for this location
-          const locationResponse = await fetch(`/api/get-location-documents?chainId=${encodeURIComponent(chainParam)}&locationId=${encodeURIComponent(location.id)}`)
-          if (locationResponse.ok) {
-            const locationDocuments = await locationResponse.json()
-            if (locationDocuments.success && locationDocuments.documentIds) {
-              // Count timestamp documents for each transcript document
-              for (const docId of locationDocuments.documentIds) {
-                try {
-                  // Check if timestamp document exists
-                  const timestampRef = collection(db, 'timestamps', docId, 'entries')
-                  const timestampSnap = await getDocs(timestampRef)
-                  totalCount += timestampSnap.size
-                } catch (timestampError) {
-                  console.warn(`⚠️ Could not count timestamps for ${docId}:`, timestampError)
-                }
-              }
-            }
-          }
-        } catch (locationError) {
-          console.warn(`⚠️ Could not process location ${location.id}:`, locationError)
+          // Count documents in the timestamps subcollection for this transcript
+          const timestampsRef = collection(db, 'transcript', docId, 'timestamps')
+          const timestampsSnap = await getDocs(timestampsRef)
+          
+          const docTimestampCount = timestampsSnap.size
+          totalCount += docTimestampCount
+          
+          console.log(`📊 Document ${docId}: ${docTimestampCount} timestamp documents`)
+        } catch (timestampError) {
+          console.warn(`⚠️ Could not count timestamps for transcript document ${docId}:`, timestampError)
         }
       }
       
-      console.log(`📊 Found ${totalCount} total timestamp documents`)
+      console.log(`📊 Found ${totalCount} total timestamp documents across all transcript documents`)
       setTotalTranscriptCount(totalCount)
       
-      clientLogger.info('📊 Total transcript count loaded successfully', { count: totalCount })
+      clientLogger.info('📊 Total transcript count loaded successfully', { 
+        transcriptDocuments: transcriptSnap.size,
+        totalTimestampDocuments: totalCount 
+      })
     } catch (error) {
       console.error('❌ Error loading total transcript count:', error)
       clientLogger.error('❌ Failed to load total transcript count', error)
@@ -3660,7 +3643,7 @@ export default function Dashboard() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-slate-600 font-medium">Total Transcripts</p>
+                    <p className="text-sm text-slate-600 font-medium">Total Documents</p>
                     <p className="text-3xl font-bold text-emerald-600 mt-1">{totalTranscriptCount}</p>
                   </div>
                   <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
