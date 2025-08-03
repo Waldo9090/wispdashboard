@@ -536,7 +536,7 @@ export default function Dashboard() {
         const isEmailAuthorized = AUTHORIZED_EMAILS.includes(user.email);
         if (!isEmailAuthorized) {
           //console.log('🚫 Unauthorized user access attempt:', user.email);
-          router.push('/signin'); // Redirect to signin page
+          router.push('/'); // Redirect to main page
           return;
         }
 
@@ -545,18 +545,18 @@ export default function Dashboard() {
           const userDoc = await getDoc(doc(db, 'users', user.uid))
           
           if (!userDoc.exists()) {
-            //console.log('❌ User not found in Firestore users collection, redirecting to signin')
-            router.push('/signin')
+            //console.log('❌ User not found in Firestore users collection, redirecting to main page')
+            router.push('/')
           } else {
             //console.log('✅ User found in Firestore users collection')
           }
         } catch (error) {
           console.error('❌ Error checking user in Firestore:', error)
-          router.push('/signin')
+          router.push('/')
         }
       } else if (!authLoading && !user) {
-        //console.log('❌ User not authenticated, redirecting to signin')
-        router.push('/signin')
+        //console.log('❌ User not authenticated, redirecting to main page')
+        router.push('/')
       }
     }
 
@@ -567,12 +567,12 @@ export default function Dashboard() {
   if (user) {
     const isEmailAuthorized = AUTHORIZED_EMAILS.includes(user.email);
     if (!isEmailAuthorized) {
-      router.push('/signin');
+      router.push('/');
       return (
         <div className="min-h-screen bg-background flex items-center justify-center p-4">
           <div className="text-center">
             <h1 className="text-xl font-bold text-foreground mb-2">🚫 Unauthorized User</h1>
-            <p className="text-muted-foreground">Redirecting to signin page...</p>
+            <p className="text-muted-foreground">Redirecting to main page...</p>
           </div>
         </div>
       );

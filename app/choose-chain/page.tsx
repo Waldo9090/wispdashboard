@@ -77,7 +77,7 @@ export default function ChooseChainPage() {
   // Redirect if user is not signed in
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/signin');
+      router.push('/');
     }
   }, [user, loading, router]);
 
