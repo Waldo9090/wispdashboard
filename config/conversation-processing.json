@@ -34,7 +34,7 @@
   },
   "clusteringSettings": {
     "minClusterSize": 5,
-    "similarityThreshold": 0.3,
+    "similarityThreshold": 0.5,
     "method": "cosine"
   },
   "dataSettings": {

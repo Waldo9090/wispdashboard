@@ -224,7 +224,7 @@ function simpleClustering(embeddings: number[][], minClusterSize: number = 5): n
   };
   
   // Simple clustering based on similarity threshold
-  const threshold = 0.3;
+  const threshold = 0.8;
   
   for (let i = 0; i < embeddings.length; i++) {
     if (visited.has(i)) continue;

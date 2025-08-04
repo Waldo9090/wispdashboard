@@ -156,7 +156,7 @@ interface AlertData {
   timestamp: any
   title: string
   transcriptReferences: AlertTranscriptReference[]
-  type?: 'trackers_comment' | 'speaker_comment' | 'comment' | 'info' | string
+  type?: 'trackers_comment' | 'warning' | 'comment' | 'info' | string
   source?: 'TRACKERS_TAB' | 'DIRECT_SELECTION' | string
   userEmail?: string
   userName?: string
@@ -1277,7 +1277,7 @@ export default function Dashboard() {
           transcriptName: selectedTranscript.name,
           audioURL: selectedTranscript.audioURL || ''
         }],
-        type: isTrackersComment ? "trackers_comment" : "speaker_comment",
+        type: isTrackersComment ? "trackers_comment" : "warning",
         source: isTrackersComment ? "TRACKERS_TAB" : "DIRECT_SELECTION",
         userEmail: user.email || 'unknown',
         userName: user.displayName || 'Unknown User',
@@ -2727,7 +2727,7 @@ export default function Dashboard() {
                                 {alert.type && (
                                   <span className="text-xs px-2 py-1 rounded font-medium bg-gray-100 text-gray-600 uppercase tracking-wide">
                                     {alert.type === 'trackers_comment' ? 'TRACKERS' :
-                                     alert.type === 'speaker_comment' ? 'Comment' :
+                                     alert.type === 'warning' ? 'Warning' :
                                      alert.type}
                                   </span>
                                 )}
