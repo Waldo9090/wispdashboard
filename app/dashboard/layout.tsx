@@ -1,6 +1,6 @@
 "use client"
 
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { Home, MessageSquare, Link as LinkIcon, Settings, Bot, X, GripVertical, Sparkles, FileText, CheckSquare, BarChart3, Workflow, ActivitySquare } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -19,6 +19,7 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const router = useRouter()
   const { theme, setTheme } = useTheme()
   const { user } = useAuth()
 
@@ -62,7 +63,10 @@ export default function DashboardLayout({
         </nav>
 
         <div className="p-4 border-t border-border">
-          <div className="w-full flex items-center justify-start text-muted-foreground text-sm">
+          <div 
+            className="w-full flex items-center justify-start text-muted-foreground text-sm cursor-pointer hover:text-foreground transition-colors"
+            onClick={() => router.push('/')}
+          >
             {user?.email || 'user@example.com'}
           </div>
         </div>

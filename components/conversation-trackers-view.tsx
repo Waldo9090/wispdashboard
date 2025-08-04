@@ -952,10 +952,9 @@ export function ConversationTrackersView() {
       </div>
 
       {/* Notes Modal for Phrase Commenting */}
-      {showNotesModal && selectedPhrase && (
+      {/* {showNotesModal && selectedPhrase && (
         <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg w-full max-w-2xl mx-4 max-h-[80vh] overflow-hidden flex flex-col">
-            {/* Header */}
             <div className="flex justify-between items-center p-6 border-b">
               <div>
                 <h3 className="text-lg font-semibold">Add Comment</h3>
@@ -976,9 +975,7 @@ export function ConversationTrackersView() {
               </Button>
             </div>
             
-            {/* Content */}
             <div className="flex-1 overflow-y-auto p-6">
-              {/* Selected Phrase */}
               <div className="mb-6">
                 <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <div className="flex items-center justify-between mb-2">
@@ -998,7 +995,6 @@ export function ConversationTrackersView() {
                 </div>
               </div>
               
-              {/* Comment Input */}
               <div className="mb-6">
                 <label className="text-sm font-medium text-gray-600 mb-2 block">Your Comment</label>
                 <Textarea
@@ -1009,7 +1005,6 @@ export function ConversationTrackersView() {
                 />
               </div>
               
-              {/* Existing Comments */}
               {loadingComments ? (
                 <div className="text-center py-4">
                   <Loader2 className="w-6 h-6 animate-spin mx-auto" />
@@ -1044,7 +1039,6 @@ export function ConversationTrackersView() {
               )}
             </div>
             
-            {/* Footer */}
             <div className="flex justify-end gap-3 p-6 border-t">
               <Button
                 variant="outline"
@@ -1075,7 +1069,7 @@ export function ConversationTrackersView() {
             </div>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Full Stats Modal */}
       {showFullStatsModal && selectedCustomer && (
