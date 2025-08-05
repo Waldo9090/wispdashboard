@@ -171,11 +171,10 @@ export default function MedicalSpaLanding() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="text-left">
               <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
-                Turn consultations into <span className="text-purple-600">revenue intelligence.</span>
+                Automate your sales layer with <span className="text-purple-600">AI</span>
               </h1>
               <p className="text-xl text-gray-700 mb-8 max-w-3xl mx-auto leading-relaxed">
-                Transform every consultation, treatment discussion, and follow-up into actionable insights that boost
-                your medical spa's revenue and client satisfaction.
+                Wisp finds leads, records every consult, flags missed opportunities, and coaches your aesthetic clinic team to close more packages.
               </p>
                         <div className="flex justify-start gap-4">
 
@@ -190,26 +189,125 @@ export default function MedicalSpaLanding() {
             </div>
 
             <div className="relative w-full h-[400px] md:h-[500px] lg:h-[600px] rounded-xl overflow-hidden shadow-lg bg-gray-200">
-              <video autoPlay loop muted playsInline className="absolute inset-0 w-full h-full object-cover">
-                <source src="/videos/videotalking.mp4" type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
+              <img 
+                src="/images/newfoundimage.jpg" 
+                alt="Aesthetic clinic consultation" 
+                className="absolute inset-0 w-full h-full object-cover"
+              />
               {/* Gradient overlay for blurbs readability */}
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-transparent"></div>
 
               {/* Blurbs with animations */}
-              <div className="absolute top-1/4 left-1/4 bg-gray-800 text-white px-4 py-2 rounded-full text-sm animate-fade-in-left animate-delay-300">
-                What could be done better?
+              <div className="absolute top-1/4 left-1/4 bg-purple-800 text-white px-4 py-2 rounded-full text-sm animate-fade-in-left animate-delay-300">
+              18:22 – Treatment Education
               </div>
-              <div className="absolute top-1/2 right-1/4 bg-gray-800 text-white px-4 py-2 rounded-full text-sm animate-fade-in-right animate-delay-500">
-                02:15 – First Impressions
+              <div className="absolute top-1/2 right-1/4 bg-purple-800 text-white px-4 py-2 rounded-full text-sm animate-fade-in-right animate-delay-500">
+              What could be done better?
               </div>
-              <div className="absolute bottom-1/4 left-1/3 bg-gray-800 text-white px-4 py-2 rounded-full text-sm animate-fade-in-left animate-delay-700">
-                09:40 – Skin Goals
+              <div className="absolute bottom-1/4 left-1/3 bg-purple-800 text-white px-4 py-2 rounded-full text-sm animate-fade-in-left animate-delay-700">
+              02:15 – First Impressions
               </div>
-              <div className="absolute bottom-1/6 right-1/6 bg-gray-800 text-white px-4 py-2 rounded-full text-sm animate-fade-in-right animate-delay-900">
-                18:22 – Treatment Education
+              <div className="absolute bottom-1/6 right-1/6 bg-purple-800 text-white px-4 py-2 rounded-full text-sm animate-fade-in-right animate-delay-900">
+              09:40 – Skin Goals
               </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* New Opportunity Finder Section */}
+      <section className="bg-white py-20">
+        <div className="container mx-auto px-4">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <div className="relative">
+              {/* Globe Visualization */}
+              <div className="bg-white rounded-xl border border-gray-200 p-8 shadow-sm">
+                <div className="relative w-full h-64 flex items-center justify-center">
+                  {/* Globe */}
+                  <div className="w-48 h-48 bg-gradient-to-br from-blue-50 to-purple-50 rounded-full border-2 border-gray-200 relative overflow-hidden">
+                    {/* Globe dots pattern */}
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-full h-full relative">
+                        {/* North America */}
+                        <div className="absolute top-8 left-1/4 w-2 h-2 bg-purple-500 rounded-full"></div>
+                        <div className="absolute top-12 left-1/3 w-1 h-1 bg-purple-500 rounded-full"></div>
+                        <div className="absolute top-16 left-1/4 w-1 h-1 bg-purple-500 rounded-full"></div>
+                        {/* Europe */}
+                        <div className="absolute top-6 right-1/3 w-1 h-1 bg-purple-500 rounded-full"></div>
+                        <div className="absolute top-10 right-1/4 w-1 h-1 bg-purple-500 rounded-full"></div>
+                        {/* Asia */}
+                        <div className="absolute top-8 right-1/6 w-1 h-1 bg-purple-500 rounded-full"></div>
+                        <div className="absolute top-14 right-1/8 w-1 h-1 bg-purple-500 rounded-full"></div>
+                        {/* Australia */}
+                        <div className="absolute bottom-8 left-1/3 w-1 h-1 bg-purple-500 rounded-full"></div>
+                        {/* South America */}
+                        <div className="absolute bottom-12 left-1/4 w-1 h-1 bg-purple-500 rounded-full"></div>
+                        <div className="absolute bottom-16 left-1/3 w-1 h-1 bg-purple-500 rounded-full"></div>
+                        {/* Africa */}
+                        <div className="absolute bottom-8 right-1/3 w-1 h-1 bg-purple-500 rounded-full"></div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Callout Boxes */}
+                  <div className="absolute top-4 right-8 bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 bg-purple-500 rounded-full"></div>
+                      <span className="text-gray-700 font-medium">New Treatment Trends Detected</span>
+                    </div>
+                  </div>
+                  
+                  <div className="absolute top-1/2 left-4 bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 bg-purple-500 rounded-full"></div>
+                      <span className="text-gray-700 font-medium">Ideal Patients Identified</span>
+                    </div>
+                  </div>
+                  
+                  <div className="absolute bottom-8 right-4 bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 bg-purple-500 rounded-full"></div>
+                      <span className="text-gray-700 font-medium">VIP Clients Monitored</span>
+                    </div>
+                  </div>
+                  <div className="absolute bottom-8 left-8 bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 text-sm">
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 bg-purple-500 rounded-full"></div>
+                      <span className="text-gray-700 font-medium">Revenue Opportunities Uncovered</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900">Opportunity Intelligence for Clinics</h2>
+              </div>
+              
+              <p className="text-gray-700 mb-6 text-lg">
+                Empower your clinic to grow faster with AI that uncovers new business opportunities from your existing client base and industry trends.
+              </p>
+              
+              <ul className="space-y-3 mb-8">
+                <li className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                  <span className="text-gray-700">Identifies moments to upsell</span>
+                </li>
+                <li className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                  <span className="text-gray-700">Follows key clients prefernce changes</span>
+                </li>
+                <li className="flex items-center space-x-3">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                  <span className="text-gray-700">Finds new leads for your clinic</span>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
@@ -312,6 +410,88 @@ export default function MedicalSpaLanding() {
         </div>
       </section>
 
+      {/* How it Works Section */}
+      <section className="bg-gray-50 py-20">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4 leading-tight">
+              How it Works
+            </h2>
+            <p className="text-xl text-gray-700 max-w-2xl mx-auto">
+              Transform your consultations into actionable insights in three simple steps
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-12">
+            {/* Step 1: Record */}
+            <div className="text-center">
+              <div className="relative mb-6">
+                <div className="w-24 h-24 bg-purple-100 border-2 border-purple-300 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
+                  <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">1</span>
+                  </div>
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Record</h3>
+              <p className="text-gray-700">Capture your client consultations with our easy-to-use recording system.</p>
+            </div>
+
+            {/* Step 2: Analyze */}
+            <div className="text-center">
+              <div className="relative mb-6">
+                <div className="w-24 h-24 bg-blue-100 border-2 border-blue-300 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
+                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">2</span>
+                  </div>
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Analyze</h3>
+              <p className="text-gray-700">Our AI processes conversations to identify opportunities and insights.</p>
+            </div>
+
+            {/* Step 3: Optimize */}
+            <div className="text-center">
+              <div className="relative mb-6">
+                <div className="w-24 h-24 bg-green-100 border-2 border-green-300 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                  </div>
+                </div>
+                <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
+                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">3</span>
+                  </div>
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-3">Optimize</h3>
+              <p className="text-gray-700">Get actionable recommendations to improve sales and client satisfaction.</p>
+            </div>
+          </div>
+
+          {/* Connection Lines */}
+          <div className="hidden md:block relative mt-8">
+            <div className="absolute top-1/2 left-1/3 w-1/3 h-0.5 bg-gradient-to-r from-purple-300 to-blue-300 transform -translate-y-1/2"></div>
+            <div className="absolute top-1/2 right-1/3 w-1/3 h-0.5 bg-gradient-to-r from-blue-300 to-green-300 transform -translate-y-1/2"></div>
+          </div>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section id="features" className="bg-gray-100 py-20">
         <div className="container mx-auto px-4">
@@ -357,130 +537,12 @@ export default function MedicalSpaLanding() {
         </div>
       </section>
 
-      {/* New Section: Discover the Impact (replaces "Real Results") */}
-      <section id="results" className="bg-white py-20">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">
-            Discover the <span className="text-purple-600">WispAI Impact</span>
-          </h2>
-          <p className="text-gray-700 mb-12">See how WispAI can transform your medical spa's potential.</p>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <Card className="bg-gray-100 border border-gray-200 p-6 rounded-lg shadow-sm">
-              <CardContent className="p-0 flex flex-col items-center text-center">
-                <div className="w-12 h-12 bg-purple-100 border border-purple-300 rounded-full flex items-center justify-center mb-4">
-                  <Lightbulb className="w-6 h-6 text-purple-600" />
-                </div>
-                <h3 className="font-semibold text-gray-900 text-lg mb-2">Actionable Insights</h3>
-                <p className="text-gray-700 text-sm">
-                  Uncover hidden opportunities in every client interaction to drive growth.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gray-100 border border-gray-200 p-6 rounded-lg shadow-sm">
-              <CardContent className="p-0 flex flex-col items-center text-center">
-                <div className="w-12 h-12 bg-purple-100 border border-purple-300 rounded-full flex items-center justify-center mb-4">
-                  <Users className="w-6 h-6 text-purple-600" />
-                </div>
-                <h3 className="font-semibold text-gray-900 text-lg mb-2">Empowered Team</h3>
-                <p className="text-gray-700 text-sm">
-                  Equip your staff with the tools to enhance client engagement and sales performance.
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-gray-100 border border-gray-200 p-6 rounded-lg shadow-sm">
-              <CardContent className="p-0 flex flex-col items-center text-center">
-                <div className="w-12 h-12 bg-purple-100 border border-purple-300 rounded-full flex items-center justify-center mb-4">
-                  <DollarSign className="w-6 h-6 text-purple-600" />
-                </div>
-                <h3 className="font-semibold text-gray-900 text-lg mb-2">Maximized Revenue</h3>
-                <p className="text-gray-700 text-sm">
-                  Optimize your service offerings and pricing strategies for greater profitability.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section id="faq" className="py-20 bg-gray-100">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Frequently Asked <span className="text-purple-600">Questions</span>
-            </h2>
-            <p className="text-xl text-gray-700">Everything you need to know about WispAI</p>
-          </div>
-
-          <div className="max-w-3xl mx-auto">
-            <Accordion type="single" collapsible className="space-y-4">
-              <AccordionItem value="item-1" className="border border-gray-200 bg-white rounded-lg px-6">
-                <AccordionTrigger className="text-left font-semibold text-gray-900 hover:text-purple-600 transition-colors">
-                  What is WispAI and how can it help my medical spa?
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-700">
-                  WispAI is an AI-powered platform designed to analyze client conversations and provide actionable
-                  insights to boost your medical spa's revenue. It helps identify upsell opportunities, improve
-                  treatment recommendations, and enhance overall client satisfaction.
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="item-2" className="border border-gray-200 bg-white rounded-lg px-6">
-                <AccordionTrigger className="text-left font-semibold text-gray-900 hover:text-purple-600 transition-colors">
-                  How does WispAI ensure data privacy and security?
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-700">
-                  We prioritize data privacy and security with robust encryption protocols and secure data handling
-                  practices. All client information is processed and stored with the utmost care to ensure
-                  confidentiality and integrity.
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="item-3" className="border border-gray-200 bg-white rounded-lg px-6">
-                <AccordionTrigger className="text-left font-semibold text-gray-900 hover:text-purple-600 transition-colors">
-                  What kind of support does WispAI offer?
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-700">
-                  WispAI provides comprehensive support including initial onboarding, training sessions for your staff,
-                  and ongoing technical assistance. Our team is dedicated to ensuring you get the most out of our
-                  platform.
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="item-4" className="border border-gray-200 bg-white rounded-lg px-6">
-                <AccordionTrigger className="text-left font-semibold text-gray-900 hover:text-purple-600 transition-colors">
-                  Is WispAI compatible with my existing systems?
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-700">
-                  WispAI is designed for seamless integration with many popular medical spa management and booking
-                  systems. During your demo, we can discuss your specific setup and ensure compatibility.
-                </AccordionContent>
-              </AccordionItem>
-
-              <AccordionItem value="item-5" className="border border-gray-200 bg-white rounded-lg px-6">
-                <AccordionTrigger className="text-left font-semibold text-gray-900 hover:text-purple-600 transition-colors">
-                  How long does it take to set up WispAI?
-                </AccordionTrigger>
-                <AccordionContent className="text-gray-700">
-                  Setup is quick and straightforward. Our team will guide you through the process, which typically takes
-                  just a few hours to get your account configured and ready to start analyzing conversations.
-                </AccordionContent>
-              </AccordionItem>
-            </Accordion>
-          </div>
-        </div>
-      </section>
 
       {/* CTA Section */}
       <section className="bg-white py-20">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-4xl font-bold text-gray-900 mb-6 leading-tight">
-            Ready to boost your <span className="text-purple-600">medical spa revenue?</span>
+            Ready to boost your <span className="text-purple-600"> revenue?</span>
           </h2>
           <p className="text-xl text-gray-700 mb-8 max-w-2xl mx-auto leading-relaxed">
             Join hundreds of medical spas already using our platform to increase revenue, improve client satisfaction,
