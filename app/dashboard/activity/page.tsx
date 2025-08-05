@@ -192,6 +192,7 @@ export default function Dashboard() {
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [selectedTranscript, setSelectedTranscript] = useState<TimestampData | null>(null)
   const [showTranscriptModal, setShowTranscriptModal] = useState(false)
+  const [showFullTranscript, setShowFullTranscript] = useState(false)
   const [comment, setComment] = useState('')
   const [highlightedText, setHighlightedText] = useState<{text: string, speaker: string, entryIndex: number, startIndex: number, endIndex: number} | null>(null)
   const [savingComment, setSavingComment] = useState(false)
@@ -2453,57 +2454,140 @@ export default function Dashboard() {
 
                 {/* Speaker Transcript */}
                 <div className="mb-8">
-                  <h4 className="text-xl font-bold text-slate-900 mb-6">Speaker Transcript</h4>
-                  <div className="space-y-6">
-                    {selectedTranscript.speakerTranscript && selectedTranscript.speakerTranscript.length > 0 ? (
-                      selectedTranscript.speakerTranscript.map((speaker, index) => (
-                        <div key={index} className="flex items-start space-x-4 p-6 bg-slate-50 rounded-xl border border-slate-200">
-                          <div className="flex-shrink-0">
-                            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center shadow-sm">
-                              <span className="text-sm font-bold text-white">
-                                {speaker.speaker ? speaker.speaker.charAt(0).toUpperCase() : 'S'}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-3 mb-3">
-                              <span className="text-lg font-semibold text-slate-900">
-                                {speaker.speaker || 'Speaker'}
-                              </span>
-                              {speaker.timestamp && (
-                                <span className="text-sm text-slate-600 bg-slate-200 px-3 py-1 rounded-full">
-                                  {speaker.timestamp}
-                                </span>
-                              )}
-                            </div>
-                            <p 
-                              className="text-slate-700 leading-relaxed select-text cursor-text text-base"
-                              onMouseUp={() => {
-                                const selection = window.getSelection()
-                                if (selection && selection.toString().trim()) {
-                                  const selectedText = selection.toString().trim()
-                                  const range = selection.getRangeAt(0)
-                                  const startIndex = range.startOffset
-                                  const endIndex = range.endOffset
-                                  handleTextSelection(selectedText, speaker.speaker, index, startIndex, endIndex)
-                                  selection.removeAllRanges()
-                                }
-                              }}
-                            >
-                              {highlightedText && highlightedText.entryIndex === index ? 
-                                renderHighlightedText(speaker.text, highlightedText.startIndex, highlightedText.endIndex, index) :
-                                speaker.text
-                              }
-                            </p>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-8 bg-slate-100 rounded-xl text-center text-slate-500">
-                        No speaker transcript available
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-sm">
+                        <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
                       </div>
+                      <h4 className="text-xl font-bold text-slate-900">Speaker Transcript</h4>
+                    </div>
+                    {selectedTranscript.speakerTranscript && selectedTranscript.speakerTranscript.length > 0 && !showFullTranscript && (
+                      <button
+                        onClick={() => setShowFullTranscript(true)}
+                        className="inline-flex items-center space-x-2 px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-all duration-200 shadow-sm hover:shadow-md"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                        <span>Show Full Transcript</span>
+                      </button>
                     )}
                   </div>
+                  
+                  {selectedTranscript.speakerTranscript && selectedTranscript.speakerTranscript.length > 0 ? (
+                    showFullTranscript ? (
+                      <div className="space-y-4">
+                        {/* Hide Transcript Button at Top Right */}
+                        <div className="flex justify-end pb-4">
+                          <button
+                            onClick={() => setShowFullTranscript(false)}
+                            className="inline-flex items-center space-x-2 px-6 py-3 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-all duration-200 shadow-sm hover:shadow-md"
+                          >
+                            <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                            <span>Hide Transcript</span>
+                          </button>
+                        </div>
+                        
+                        {selectedTranscript.speakerTranscript.map((speaker, index) => (
+                          <div key={index} className="group relative flex items-start space-x-4 p-6 bg-white rounded-xl border border-slate-200 hover:border-purple-200 hover:shadow-sm transition-all duration-200">
+                            <div className="flex-shrink-0">
+                              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow duration-200">
+                                <span className="text-sm font-bold text-white">
+                                  {speaker.speaker ? speaker.speaker.charAt(0).toUpperCase() : 'S'}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center space-x-3 mb-3">
+                                <span className="text-lg font-semibold text-slate-900 truncate">
+                                  {speaker.speaker || 'Speaker'}
+                                </span>
+                                {speaker.timestamp && (
+                                  <span className="flex-shrink-0 text-sm text-slate-600 bg-slate-100 px-3 py-1 rounded-full font-medium">
+                                    {speaker.timestamp}
+                                  </span>
+                                )}
+                              </div>
+                              <p 
+                                className="text-slate-700 leading-relaxed select-text cursor-text text-base"
+                                onMouseUp={() => {
+                                  const selection = window.getSelection()
+                                  if (selection && selection.toString().trim()) {
+                                    const selectedText = selection.toString().trim()
+                                    const range = selection.getRangeAt(0)
+                                    const startIndex = range.startOffset
+                                    const endIndex = range.endOffset
+                                    handleTextSelection(selectedText, speaker.speaker, index, startIndex, endIndex)
+                                    selection.removeAllRanges()
+                                  }
+                                }}
+                              >
+                                {highlightedText && highlightedText.entryIndex === index ? 
+                                  renderHighlightedText(speaker.text, highlightedText.startIndex, highlightedText.endIndex, index) :
+                                  speaker.text
+                                }
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                        
+                        {/* Hide Transcript Button at Bottom Right */}
+                        <div className="flex justify-end pt-4">
+                          <button
+                            onClick={() => setShowFullTranscript(false)}
+                            className="inline-flex items-center space-x-2 px-6 py-3 text-sm font-medium text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-all duration-200 shadow-sm hover:shadow-md"
+                          >
+                            <svg className="w-4 h-4 rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                            <span>Hide Transcript</span>
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="group relative bg-gradient-to-r from-slate-50 to-slate-100 rounded-xl border border-slate-200 hover:border-purple-200 transition-all duration-200 cursor-pointer" onClick={() => setShowFullTranscript(true)}>
+                        <div className="p-6">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-4">
+                              <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow duration-200">
+                                <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                </svg>
+                              </div>
+                              <div>
+                                <h5 className="text-lg font-semibold text-slate-900 mb-1">
+                                  Transcript Available
+                                </h5>
+                                <p className="text-sm text-slate-600">
+                                  {selectedTranscript.speakerTranscript.length} conversation entries
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2 text-slate-500">
+                              <span className="text-sm font-medium">Click to expand</span>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  ) : (
+                    <div className="p-8 bg-slate-50 rounded-xl border border-slate-200 text-center">
+                      <div className="w-16 h-16 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        </svg>
+                      </div>
+                      <h5 className="text-lg font-semibold text-slate-700 mb-2">No Transcript Available</h5>
+                      <p className="text-slate-500">This recording doesn't have a speaker transcript.</p>
+                    </div>
+                  )}
                 </div>
 
 
