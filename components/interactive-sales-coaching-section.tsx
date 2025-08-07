@@ -115,7 +115,7 @@ const CoachingVisual = () => (
         <text x="70" y="44" fill="#374151" fontSize="11">Try to probe deeper on pain points</text>
         
         <rect y="60" width="60" height="20" fill="#10b981" rx="10" />
-        <text x="30" y="74" fill="white" fontSize="10" textAnchor="middle">25:12</text>
+        <text x="30" y="74" fill="white" fontSize="10" textAnchor="middle">23:12</text>
         <text x="70" y="74" fill="#374151" fontSize="11">Perfect closing technique!</text>
       </g>
       
@@ -188,20 +188,20 @@ const IntelligenceVisual = () => (
       <text x="130" y="98" fill="#ef4444" fontSize="14" fontWeight="bold">$1.6M</text>
     </g>
     
-    {/* Winning phrases */}
+    {/* Winning phrases - Fixed positioning and spacing */}
     <g transform="translate(250, 100)">
       <text x="0" y="0" fill="#475569" fontSize="14" fontWeight="bold">Winning Phrases</text>
       <rect y="10" width="200" height="25" fill="#ddd6fe" rx="4" />
-      <text x="10" y="27" fill="#7c3aed" fontSize="11">"Tell me more about your biggest challenge"</text>
-      <text x="170" y="27" fill="#10b981" fontSize="10" fontWeight="bold">+23%</text>
+      <text x="10" y="27" fill="#7c3aed" fontSize="9">"Tell me more about your biggest challenge"</text>
+      <text x="180" y="27" fill="#10b981" fontSize="10" fontWeight="bold">+23%</text>
       
       <rect y="40" width="200" height="25" fill="#ecfdf5" rx="4" />
-      <text x="10" y="57" fill="#059669" fontSize="11">"What would success look like?"</text>
-      <text x="170" y="57" fill="#10b981" fontSize="10" fontWeight="bold">+18%</text>
+      <text x="10" y="57" fill="#059669" fontSize="9">"What would success look like?"</text>
+      <text x="180" y="57" fill="#10b981" fontSize="10" fontWeight="bold">+18%</text>
       
       <rect y="70" width="200" height="25" fill="#fef2f2" rx="4" />
-      <text x="10" y="87" fill="#dc2626" fontSize="11">"Let me send you a proposal"</text>
-      <text x="170" y="87" fill="#ef4444" fontSize="10" fontWeight="bold">-12%</text>
+      <text x="10" y="87" fill="#dc2626" fontSize="9">"Let me send you a proposal"</text>
+      <text x="180" y="87" fill="#ef4444" fontSize="10" fontWeight="bold">-12%</text>
     </g>
     
     {/* Performance analytics chart */}
@@ -298,7 +298,8 @@ export function InteractiveSalesCoachingSection() {
     <section className="py-16 md:py-24 lg:py-32 bg-custom-dark-bg text-text-dark-primary">
       <div className="container px-4 md:px-8 lg:px-12 text-center">
         <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-12 text-text-dark-primary">
-          Learn from every conversation. Get more wins.
+          Learn from every conversation. Boost every sale.
+
         </h2>
         <div className="flex justify-center space-x-8 mb-12 text-lg font-semibold">
           {Object.keys(tabData).map((tabName) => (
