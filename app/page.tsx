@@ -49,7 +49,7 @@ return (
               Backed by Y-Combinator
             </div>
             <AnimatedHeading
-              baseText="Automate your sales with AI that "
+              baseText="Sales automated with AI that "
               phrases={[
                 "  finds your perfect leads",
                 "  books your prospects",
