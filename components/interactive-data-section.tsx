@@ -298,7 +298,7 @@ interface TabContent {
 
 const tabData: Record<string, TabContent> = {
   'INTELLIGENT LEAD DISCOVERY': {
-    title: 'Build better lead lists with custom databases, not generic data providers',
+    title: 'Custom-built lead lists, not cookie-cutter data',
     description: 'Stop buying stale lists. Wisp\'s AI agents crawl the web to surface high-intent leads actively searching for your solution—so your pipeline starts with buyers, not browsers.',
   },
   'AI OUTREACH': {

@@ -273,6 +273,7 @@ interface TabContent {
   title: string
   description: string
   buttonText: string
+  buttonHref?: string
 }
 
 const tabData: Record<string, TabContent> = {
@@ -280,19 +281,22 @@ const tabData: Record<string, TabContent> = {
     tag: 'VISIBILITY',
     title: 'Hear what your team actually says',
     description: 'Wisp automatically records and transcribes every sales call—so managers don\'t have to guess what happened. Get full visibility into every rep\'s conversations, from first pitch to close.',
-    buttonText: 'SEE CALL VISIBILITY',
+    buttonText: 'Book Demo',
+    buttonHref: 'https://calendly.com/adimahna/30min',
   },
   'COACHING': {
     tag: 'COACHING',
     title: 'Train reps with daily, targeted feedback',
     description: 'Wisp scores every call and highlights where deals are won or lost. Managers can leave timestamped comments and let reps self-correct—no need to wait for quarterly reviews or shadow sessions.',
-    buttonText: 'EXPLORE COACHING TOOLS',
+    buttonText: 'Book Demo',
+    buttonHref: 'https://calendly.com/adimahna/30min',
   },
   'INTELLIGENCE': {
     tag: 'INTELLIGENCE',
     title: 'Scale what your top reps do best',
     description: 'Wisp analyzes thousands of conversations to find what actually closes—whether it\'s a phrase, tone, or objection-handling tactic. These patterns get turned into real-time training moments for your whole team.',
-    buttonText: 'UNLOCK SALES INTELLIGENCE',
+    buttonText: 'Book Demo',
+    buttonHref: 'https://calendly.com/adimahna/30min',
   },
 }
 
@@ -333,9 +337,14 @@ export function InteractiveSalesCoachingSection() {
             <p className="text-lg text-text-light-muted">
               {currentContent.description}
             </p>
-            <Button className="bg-primary-pink text-text-dark-primary hover:bg-primary-pink/90 px-8 py-3 rounded-md shadow-md">
+            <a
+              href={currentContent.buttonHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block bg-primary-pink text-text-dark-primary hover:bg-primary-pink/90 px-8 py-3 rounded-md shadow-md text-center font-medium transition-colors"
+            >
               {currentContent.buttonText}
-            </Button>
+            </a>
           </div>
           <div className="flex justify-center items-center">
             <div className="w-full h-full max-w-[600px] max-h-[400px] flex items-center justify-center">

@@ -51,10 +51,10 @@ return (
             <AnimatedHeading
               baseText="Automate your sales with AI that "
               phrases={[
-                " finds your perfect leads",
-                " books your prospects",
-                " trains your sales reps",
-                " finds upsell opportunities",
+                "  finds your perfect leads",
+                "  books your prospects",
+                "  trains your sales reps",
+                "  finds upsell opportunities",
               ]}
               interval={2000} // Time after phrase is fully typed before next one starts
               typingSpeed={75} // Speed of typing each character
