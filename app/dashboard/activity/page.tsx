@@ -583,11 +583,9 @@ export default function Dashboard() {
   // Chat functions
 
 
-  // Function to handle transcript click and open full-screen modal
+  // Function to handle transcript click and navigate to transcript detail page
   const handleTranscriptClick = (transcript: TimestampData) => {
-    setSelectedTranscript(transcript)
-    setShowTranscriptModal(true)
-    loadExistingComments(transcript.transcriptDocumentId)
+    router.push(`/dashboard/activity/${transcript.id}`)
   }
 
   // Function to load existing comments and alerts from alerts collection
