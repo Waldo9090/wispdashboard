@@ -305,7 +305,7 @@ export default function SignInPage() {
         <CardHeader className="text-center pb-6">
           <div className="flex items-center justify-center mb-4">
             <img 
-              src="/logorcandy.png" 
+              src="/logocandyprob.png" 
               alt="Wisp AI Logo" 
               className="w-10 h-10 object-contain"
             />

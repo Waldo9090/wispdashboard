@@ -11,9 +11,9 @@ export const metadata: Metadata = {
   description: "Candytrail finds high-intent leads and auto-coaches reps to close more deals, faster.",
   generator: 'v0.dev',
   icons: {
-    icon: '/logorcandy.png',
-    shortcut: '/logorcandy.png',
-    apple: '/logorcandy.png',
+    icon: '/logocandyprob.png',
+    shortcut: '/logocandyprob.png',
+    apple: '/logocandyprob.png',
   },
 }
 

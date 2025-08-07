@@ -31,7 +31,7 @@ export default function DashboardLayout({
         <div className="p-6 border-b border-border">
           <div className="flex items-center space-x-3">
             <Image 
-              src="/logorcandy.png"
+              src="/logocandyprob.png"
               alt="Wisp AI Logo"
               width={32}
               height={32}

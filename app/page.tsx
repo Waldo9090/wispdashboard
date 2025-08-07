@@ -31,7 +31,7 @@ return (
         : 'bg-transparent'
     }`}>
       <Link href="#" className="flex items-center space-x-2">
-        <Image src="/logorcandy.png" width={24} height={24} alt="Candytrail Logo" className="h-6 w-6" />
+        <Image src="/logocandyprob.png" width={24} height={24} alt="Candytrail Logo" className="h-6 w-6" />
         <span className="text-xl font-bold text-white drop-shadow-md">candytrail</span>
       </Link>
 
@@ -68,7 +68,7 @@ return (
               <span>Backed by Y Combinator</span>
             </div>
             <AnimatedHeading
-              baseText="Sales automated with AI that "
+              baseText="Sales automated by AI that "
               phrases={[
                 "  finds your perfect leads",
                 "  books your prospects",
