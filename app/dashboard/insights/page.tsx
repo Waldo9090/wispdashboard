@@ -1,10 +1,944 @@
-import React from "react"
+"use client"
+
+import React, { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { Plus, MoreVertical, User, Target } from "lucide-react"
+import { useAuth } from "@/context/auth-context"
+import { db } from "@/lib/firebase"
+import { getUserDisplayName, isUserDataEncrypted } from "@/lib/decryption-utils"
+import { 
+  collection, 
+  getDocs, 
+  addDoc, 
+  query, 
+  where, 
+  doc, 
+  getDoc,
+  setDoc,
+  orderBy 
+} from "firebase/firestore"
+
+interface Tracker {
+  id: string
+  name: string
+  description: string
+  keywords: string[]
+  createdBy: string
+  createdAt: any
+  isActive: boolean
+}
+
+interface Person {
+  id: string
+  name: string
+  role: string
+  transcriptCount: number
+}
+
+interface DetectedPhrase {
+  phrase: string
+  timestamp: string
+  speaker: string
+  confidence: number
+  startTime: number
+  endTime: number
+  entryIndex: number
+}
+
+interface InsightData {
+  personId: string
+  trackerId: string
+  transcriptId?: string
+  percentage: number
+  transcriptsAnalyzed: number
+  trackerFound: number
+  detectedPhrases?: DetectedPhrase[]
+}
 
 export default function InsightsPage() {
+  const { user } = useAuth()
+  const [trackers, setTrackers] = useState<Tracker[]>([])
+  const [people, setPeople] = useState<Person[]>([])
+  const [insights, setInsights] = useState<InsightData[]>([])
+  const [loading, setLoading] = useState(true)
+  const [processing, setProcessing] = useState(false)
+  const [showCreateTracker, setShowCreateTracker] = useState(false)
+  const [hasProcessedBefore, setHasProcessedBefore] = useState(false)
+  const [newTracker, setNewTracker] = useState({
+    name: '',
+    description: '',
+    keywords: ''
+  })
+
+  useEffect(() => {
+    if (user) {
+      loadData()
+      initializeDefaultTrackers()
+    }
+  }, [user])
+  
+  // Check processed status after people are loaded
+  useEffect(() => {
+    if (user && people.length > 0) {
+      checkIfProcessedBefore()
+    }
+  }, [user, people])
+
+  const loadData = async () => {
+    setLoading(true)
+    try {
+      await Promise.all([
+        loadPeople(),
+        loadTrackers(),
+        loadExistingInsights()
+      ])
+      
+      // Don't auto-calculate - only load existing insights
+    } catch (error) {
+      console.error('Error loading data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const loadPeople = async () => {
+    try {
+      // Get people from transcript document IDs (not from speaker fields)
+      const transcriptRef = collection(db, "transcript")
+      const transcriptSnap = await getDocs(transcriptRef)
+      const peopleArray: Person[] = []
+
+      for (const locationDoc of transcriptSnap.docs) {
+        if (locationDoc.id !== 'name') {
+          const transcriptData = locationDoc.data()
+          const documentId = locationDoc.id
+          
+          let userName = 'Unknown User'
+          let userRole = 'Sales Rep'
+          let transcriptCount = 0
+
+          // Count total transcripts for this person
+          try {
+            const timestampsRef = collection(db, 'transcript', documentId, 'timestamps')
+            const timestampsSnap = await getDocs(timestampsRef)
+            transcriptCount = timestampsSnap.size
+          } catch (error) {
+            console.warn(`Could not count transcripts for ${documentId}:`, error)
+          }
+
+          // Try to decrypt the user's name from encryptedUserData
+          if (transcriptData.encryptedUserData && isUserDataEncrypted(transcriptData.encryptedUserData)) {
+            try {
+              const decryptedName = await getUserDisplayName(documentId, transcriptData.encryptedUserData)
+              if (decryptedName && decryptedName !== documentId && decryptedName !== 'Unknown User') {
+                userName = decryptedName
+              }
+            } catch (error) {
+              console.warn(`Failed to decrypt name for ${documentId}:`, error)
+            }
+          } else {
+            // Fallback to other fields if no encrypted data
+            userName = transcriptData.name || transcriptData.displayName || transcriptData.fullName || documentId
+          }
+
+          // Determine role from available data
+          if (transcriptData.role) {
+            userRole = transcriptData.role
+          } else if (transcriptData.createdAtLocation) {
+            userRole = 'Sales Rep' // Default for location-based users
+          }
+
+          peopleArray.push({
+            id: documentId,
+            name: userName,
+            role: userRole,
+            transcriptCount: transcriptCount
+          })
+        }
+      }
+
+      setPeople(peopleArray)
+    } catch (error) {
+      console.error('Error loading people:', error)
+    }
+  }
+
+  const loadTrackers = async () => {
+    try {
+      const trackersRef = collection(db, 'trackers')
+      const trackersQuery = query(
+        trackersRef,
+        where('createdBy', '==', user?.email || ''),
+        where('isActive', '==', true),
+        orderBy('createdAt', 'desc')
+      )
+      const trackersSnap = await getDocs(trackersQuery)
+      
+      const trackersData = trackersSnap.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Tracker[]
+      
+      setTrackers(trackersData)
+    } catch (error) {
+      console.error('Error loading trackers:', error)
+      setTrackers([])
+    }
+  }
+
+  // Check if we've processed transcripts before
+  const checkIfProcessedBefore = async () => {
+    try {
+      let hasAnyInsights = false
+      
+      // Check each person's insights collection
+      for (const person of people) {
+        const personInsightsRef = collection(db, 'insights', person.id, 'timestamps')
+        const personInsightsSnap = await getDocs(personInsightsRef)
+        
+        if (!personInsightsSnap.empty) {
+          hasAnyInsights = true
+          break
+        }
+      }
+      
+      setHasProcessedBefore(hasAnyInsights)
+    } catch (error) {
+      console.error('Error checking existing insights:', error)
+      setHasProcessedBefore(false)
+    }
+  }
+
+  // Load existing insights from insights collection
+  const loadExistingInsights = async () => {
+    try {
+      console.log('📊 Loading existing insights from insights collection...')
+      const allInsights: any[] = []
+      
+      // Load insights for each person
+      for (const person of people) {
+        const personInsightsRef = collection(db, 'insights', person.id, 'timestamps')
+        const personInsightsSnap = await getDocs(personInsightsRef)
+        
+        personInsightsSnap.docs.forEach(doc => {
+          allInsights.push({ id: doc.id, ...doc.data() })
+        })
+      }
+      
+      if (allInsights.length === 0) {
+        console.log('No existing insights found')
+        setInsights([])
+        return
+      }
+
+      console.log(`Found ${allInsights.length} existing insights documents`)
+      // Calculate summary from existing insight documents
+      await calculateSummaryFromExistingInsights(allInsights)
+      
+    } catch (error) {
+      console.error('Error loading existing insights:', error)
+      setInsights([])
+    }
+  }
+
+  // Calculate summary from existing insight documents
+  const calculateSummaryFromExistingInsights = async (insightDocs: any[]) => {
+    console.log(`📈 Calculating summary from ${insightDocs.length} existing insights...`)
+    const newInsights: InsightData[] = []
+    
+    const trackersToUse = [
+      { id: "introduction", name: "Introduction" },
+      { id: "rapport-building", name: "Rapport building" }, 
+      { id: "listening-to-concerns", name: "Listening to patient concerns" },
+      { id: "facial-assessment", name: "Full facial assessment" },
+      { id: "treatment-plan", name: "Developing a treatment plan" },
+      { id: "pricing-questions", name: "Addressing pricing and questions" },
+      { id: "follow-up-booking", name: "Follow-up, next steps, appointment booking" }
+    ]
+
+    try {
+      // Group insights by person
+      const insightsByPerson: Record<string, any[]> = {}
+      insightDocs.forEach(insight => {
+        if (!insightsByPerson[insight.personId]) {
+          insightsByPerson[insight.personId] = []
+        }
+        insightsByPerson[insight.personId].push(insight)
+      })
+
+      // Calculate percentages for each person/tracker combination
+      for (const person of people) {
+        const personInsights = insightsByPerson[person.id] || []
+
+        for (const tracker of trackersToUse) {
+          let totalTranscripts = 0
+          let trackerFound = 0
+
+          personInsights.forEach(insight => {
+            if (insight.trackerAnalysis && insight.trackerAnalysis[tracker.id]) {
+              totalTranscripts++
+              if (insight.trackerAnalysis[tracker.id].found) {
+                trackerFound++
+              }
+            }
+          })
+
+          const percentage = totalTranscripts > 0 ? Math.round((trackerFound / totalTranscripts) * 100) : 0
+
+          newInsights.push({
+            personId: person.id,
+            trackerId: tracker.id,
+            percentage,
+            transcriptsAnalyzed: totalTranscripts,
+            trackerFound
+          })
+
+          console.log(`📊 ${person.name} - ${tracker.name}: ${percentage}% (${trackerFound}/${totalTranscripts})`)
+        }
+      }
+
+      setInsights(newInsights)
+      
+    } catch (error) {
+      console.error('Error calculating summary from existing insights:', error)
+    }
+  }
+
+  const createTracker = async () => {
+    if (!newTracker.name.trim() || !user) return
+
+    try {
+      const trackerData = {
+        name: newTracker.name.trim(),
+        description: newTracker.description.trim(),
+        keywords: newTracker.keywords.split(',').map(k => k.trim()).filter(k => k),
+        createdBy: user.email,
+        createdAt: new Date(),
+        isActive: true
+      }
+
+      await addDoc(collection(db, 'trackers'), trackerData)
+      
+      // Reset form
+      setNewTracker({ name: '', description: '', keywords: '' })
+      setShowCreateTracker(false)
+      
+      // Reload trackers and recalculate insights
+      await loadTrackers()
+      await calculateInsights()
+    } catch (error) {
+      console.error('Error creating tracker:', error)
+    }
+  }
+
+  // Initialize default trackers for med spa workflow
+  const initializeDefaultTrackers = async () => {
+    if (!user) return
+
+    const defaultTrackers = [
+      {
+        id: "introduction",
+        name: "Introduction",
+        description: "Initial greeting and introductions",
+        keywords: ["hello", "hi", "good morning", "good afternoon", "my name is", "i'm", "introduction", "welcome", "meet"]
+      },
+      {
+        id: "rapport-building",
+        name: "Rapport building", 
+        description: "Building connection with patient",
+        keywords: ["how are you", "tell me about", "what brings you", "comfortable", "relax", "experience", "first time", "feeling"]
+      },
+      {
+        id: "listening-to-concerns",
+        name: "Listening to patient concerns, handed a mirror",
+        description: "Understanding patient needs and concerns, using mirror",
+        keywords: ["concerns", "worried about", "looking for", "want to", "goal", "problem", "issue", "bothering", "mirror", "show you", "see yourself"]
+      },
+      {
+        id: "facial-assessment",
+        name: "Full facial assessment",
+        description: "Complete evaluation of patient's face and skin",
+        keywords: ["assessment", "examine", "look at", "skin", "facial", "analyze", "evaluate", "check", "notice", "see", "areas"]
+      },
+      {
+        id: "treatment-plan",
+        name: "Developing a treatment plan",
+        description: "Creating customized treatment recommendations",
+        keywords: ["treatment plan", "recommend", "suggest", "plan", "approach", "procedure", "treatment", "options", "best for you"]
+      },
+      {
+        id: "pricing-questions",
+        name: "Addressing pricing and any other questions",
+        description: "Discussing costs and answering patient questions",
+        keywords: ["price", "cost", "investment", "budget", "payment", "insurance", "questions", "concerns", "affordable", "packages"]
+      },
+      {
+        id: "follow-up-booking",
+        name: "Follow-up, next steps, appointment booking",
+        description: "Scheduling follow-up appointments and next steps",
+        keywords: ["follow up", "next steps", "appointment", "schedule", "book", "return", "see you", "next visit", "come back", "weeks"]
+      }
+    ]
+
+    try {
+      // Check if default trackers already exist
+      const trackersRef = collection(db, 'trackers')
+      const existingQuery = query(
+        trackersRef,
+        where('createdBy', '==', user.email || '')
+      )
+      const existingSnap = await getDocs(existingQuery)
+      
+      // Only create default trackers if none exist
+      if (existingSnap.empty) {
+        console.log('Creating default trackers...')
+        const promises = defaultTrackers.map(tracker => 
+          addDoc(collection(db, 'trackers'), {
+            ...tracker,
+            createdBy: user.email,
+            createdAt: new Date(),
+            isActive: true
+          })
+        )
+        await Promise.all(promises)
+        console.log('Default trackers created successfully')
+        
+        // Reload trackers
+        await loadTrackers()
+      }
+    } catch (error) {
+      console.error('Error creating default trackers:', error)
+    }
+  }
+
+  // Enhanced Analysis Function with Phrase & Timestamp Capture
+  const analyzeTranscriptWithPhraseCapture = async (
+    speakerTranscript: any[],
+    trackers: Tracker[]
+  ): Promise<any[]> => {
+    
+    try {
+      const results = trackers.map(tracker => {
+        const detectedPhrases: DetectedPhrase[] = []
+        let found = false
+        let overallConfidence = 0
+        const keywords = tracker.keywords || []
+        
+        // Analyze each speaker transcript entry
+        speakerTranscript.forEach((entry, entryIndex) => {
+          if (!entry.text) return
+          
+          const normalizedText = entry.text.toLowerCase()
+          let entryMatched = false
+          let entryConfidence = 0
+          
+          // Check for keyword matches in this specific phrase
+          for (const keyword of keywords) {
+            if (normalizedText.includes(keyword.toLowerCase())) {
+              entryMatched = true
+              entryConfidence = Math.max(entryConfidence, 85 + Math.random() * 15)
+              break
+            }
+          }
+          
+          // Add contextual intelligence for specific trackers
+          if (!entryMatched) {
+            if (tracker.name.toLowerCase().includes('introduction')) {
+              const introPatterns = ['hello', 'hi', 'name', 'welcome', 'meet', "i'm", "my name is"]
+              entryMatched = introPatterns.some(pattern => normalizedText.includes(pattern))
+              if (entryMatched) entryConfidence = 80
+            }
+            
+            if (tracker.name.toLowerCase().includes('concerns')) {
+              const concernPatterns = ['what are you', 'interested in', 'looking for', 'want to', 'brings you', 'bothering you']
+              entryMatched = concernPatterns.some(pattern => normalizedText.includes(pattern))
+              if (entryMatched) entryConfidence = 85
+            }
+            
+            if (tracker.name.toLowerCase().includes('rapport')) {
+              const rapportPatterns = ['how are you', 'comfortable', 'first time', 'experience', 'feeling']
+              entryMatched = rapportPatterns.some(pattern => normalizedText.includes(pattern))
+              if (entryMatched) entryConfidence = 80
+            }
+            
+            if (tracker.name.toLowerCase().includes('assessment')) {
+              const assessmentPatterns = ['look at', 'examine', 'assess', 'see', 'notice', 'skin']
+              entryMatched = assessmentPatterns.some(pattern => normalizedText.includes(pattern))
+              if (entryMatched) entryConfidence = 85
+            }
+            
+            if (tracker.name.toLowerCase().includes('treatment')) {
+              const treatmentPatterns = ['recommend', 'suggest', 'plan', 'treatment', 'procedure', 'botox', 'filler']
+              entryMatched = treatmentPatterns.some(pattern => normalizedText.includes(pattern))
+              if (entryMatched) entryConfidence = 90
+            }
+            
+            if (tracker.name.toLowerCase().includes('pricing')) {
+              const pricingPatterns = ['cost', 'price', 'investment', 'payment', 'budget', '$', 'dollars']
+              entryMatched = pricingPatterns.some(pattern => normalizedText.includes(pattern))
+              if (entryMatched) entryConfidence = 95
+            }
+            
+            if (tracker.name.toLowerCase().includes('follow')) {
+              const followupPatterns = ['follow up', 'next', 'schedule', 'appointment', 'see you', 'return', 'book']
+              entryMatched = followupPatterns.some(pattern => normalizedText.includes(pattern))
+              if (entryMatched) entryConfidence = 85
+            }
+          }
+          
+          // If matched, capture the phrase with all metadata
+          if (entryMatched && entryConfidence > 50) {
+            found = true
+            detectedPhrases.push({
+              phrase: entry.text,
+              timestamp: entry.timestamp || "00:00",
+              speaker: entry.speaker || "Unknown",
+              confidence: entry.confidence || entryConfidence / 100,
+              startTime: entry.start || 0,
+              endTime: entry.end || 0,
+              entryIndex
+            })
+            overallConfidence = Math.max(overallConfidence, entryConfidence)
+          }
+        })
+        
+        return {
+          trackerId: tracker.id,
+          found,
+          confidence: Math.round(overallConfidence),
+          detectedPhrases,
+          evidence: found ? `Found ${detectedPhrases.length} relevant phrase(s)` : "Not found"
+        }
+      })
+      
+      return results
+      
+    } catch (error) {
+      console.error('Analysis failed:', error)
+      return trackers.map(t => ({
+        trackerId: t.id,
+        found: false,
+        confidence: 0,
+        detectedPhrases: [],
+        evidence: "Analysis failed"
+      }))
+    }
+  }
+
+  // Process all transcripts (initial button click)
+  const processAllTranscripts = async () => {
+    if (!user || people.length === 0) {
+      alert('Please wait for people to load first')
+      return
+    }
+
+    setProcessing(true)
+    console.log('🔍 Starting comprehensive tracker analysis for ALL transcripts...')
+    
+    try {
+      // Use the 7 default trackers directly
+      const trackersToUse = [
+        { id: "introduction", name: "Introduction", keywords: ["hello", "hi", "good morning", "my name is", "welcome"] },
+        { id: "rapport-building", name: "Rapport building", keywords: ["how are you", "comfortable", "first time", "feeling"] },
+        { id: "listening-to-concerns", name: "Listening to patient concerns", keywords: ["concerns", "looking for", "want to", "mirror", "show you"] },
+        { id: "facial-assessment", name: "Full facial assessment", keywords: ["assessment", "examine", "skin", "facial", "notice"] },
+        { id: "treatment-plan", name: "Developing a treatment plan", keywords: ["recommend", "suggest", "plan", "treatment", "procedure"] },
+        { id: "pricing-questions", name: "Addressing pricing and questions", keywords: ["price", "cost", "investment", "budget", "questions"] },
+        { id: "follow-up-booking", name: "Follow-up, next steps, appointment booking", keywords: ["follow up", "next steps", "appointment", "schedule", "book"] }
+      ]
+
+      let totalProcessed = 0
+
+      // Process each person's transcripts
+      for (const person of people) {
+        console.log(`📊 Processing transcripts for ${person.name} (${person.id})`)
+        
+        const timestampsRef = collection(db, 'transcript', person.id, 'timestamps')
+        const timestampsSnap = await getDocs(timestampsRef)
+
+        // Process each transcript document
+        for (const transcriptDoc of timestampsSnap.docs) {
+          const transcriptData = transcriptDoc.data()
+          const transcriptId = transcriptDoc.id
+          const speakerTranscript = transcriptData.speakerTranscript || transcriptData['speaker transcript'] || []
+
+          if (!Array.isArray(speakerTranscript) || speakerTranscript.length === 0) continue
+
+          // Check if already processed in the correct collection structure
+          try {
+            const existingInsightRef = doc(db, 'insights', person.id, 'timestamps', transcriptId)
+            const existingInsightSnap = await getDoc(existingInsightRef)
+            
+            if (existingInsightSnap.exists()) {
+              console.log(`  ⏭️ Skipping already processed transcript ${transcriptId}`)
+              continue
+            }
+          } catch (error) {
+            console.log(`  📝 New transcript ${transcriptId} will be processed`)
+          }
+
+          console.log(`  🔍 Analyzing NEW transcript ${transcriptId}`)
+
+          // Analyze with all 7 trackers
+          const analysisResults = await analyzeTranscriptWithPhraseCapture(speakerTranscript, trackersToUse)
+          
+          // Build tracker analysis object
+          const trackerAnalysis: any = {}
+          
+          analysisResults.forEach(result => {
+            trackerAnalysis[result.trackerId] = {
+              found: result.found,
+              confidence: result.confidence / 100, // Convert to 0-1 scale
+              detectedPhrases: result.detectedPhrases || []
+            }
+          })
+
+          // Store tracker analysis in correct insights collection structure
+          try {
+            const insightDoc = {
+              personId: person.id,
+              personName: person.name,
+              transcriptId: transcriptId,
+              transcriptPath: `/transcript/${person.id}/timestamps/${transcriptId}`,
+              speakerTranscript: speakerTranscript, // Save the speaker transcript data
+              trackerAnalysis: trackerAnalysis,
+              calculatedAt: new Date(),
+              analysisMethod: 'phrase-capture-enhanced'
+            }
+
+            // Save to: /insights/{personId}/timestamps/{transcriptId}
+            const insightRef = doc(db, 'insights', person.id, 'timestamps', transcriptId)
+            await setDoc(insightRef, insightDoc)
+            totalProcessed++
+            
+            console.log(`    ✅ Stored tracker analysis at insights/${person.id}/timestamps/${transcriptId}`)
+            
+          } catch (error) {
+            console.warn(`    ❌ Failed to store insight for transcript ${transcriptId}:`, error)
+          }
+        }
+      }
+
+      // Reload insights after processing
+      await loadExistingInsights()
+      setHasProcessedBefore(true)
+      
+      console.log(`✅ Processing completed! Analyzed ${totalProcessed} new transcripts`)
+      alert(`Processing completed! Analyzed ${totalProcessed} transcripts`)
+      
+    } catch (error) {
+      console.error('❌ Error in tracker analysis:', error)
+      alert('Error processing transcripts. Check console for details.')
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  // Process only new transcripts (incremental)
+  const processNewTranscripts = async () => {
+    console.log('🔍 Processing only NEW transcripts...')
+    // This would be called automatically when new transcripts are added
+    // Implementation similar to processAllTranscripts but with better filtering
+  }
+
+  // Calculate summary insights from insights collection
+  const calculateSummaryInsights = async () => {
+    console.log('📊 Calculating summary insights from insights collection...')
+    const newInsights: InsightData[] = []
+    
+    const trackersToUse = [
+      { id: "introduction", name: "Introduction" },
+      { id: "rapport-building", name: "Rapport building" }, 
+      { id: "listening-to-concerns", name: "Listening to patient concerns" },
+      { id: "facial-assessment", name: "Full facial assessment" },
+      { id: "treatment-plan", name: "Developing a treatment plan" },
+      { id: "pricing-questions", name: "Addressing pricing and questions" },
+      { id: "follow-up-booking", name: "Follow-up, next steps, appointment booking" }
+    ]
+
+    try {
+      // Calculate percentages for each person/tracker combination
+      for (const person of people) {
+        // Query insights collection for this person's data from correct structure
+        const personInsightsRef = collection(db, 'insights', person.id, 'timestamps')
+        const personInsightsSnap = await getDocs(personInsightsRef)
+
+        for (const tracker of trackersToUse) {
+          let totalTranscripts = 0
+          let trackerFound = 0
+
+          // Count insights where this tracker was found
+          personInsightsSnap.docs.forEach(doc => {
+            const data = doc.data()
+            if (data.trackerAnalysis && data.trackerAnalysis[tracker.id]) {
+              totalTranscripts++
+              if (data.trackerAnalysis[tracker.id].found) {
+                trackerFound++
+              }
+            }
+          })
+
+          const percentage = totalTranscripts > 0 ? Math.round((trackerFound / totalTranscripts) * 100) : 0
+
+          newInsights.push({
+            personId: person.id,
+            trackerId: tracker.id,
+            percentage,
+            transcriptsAnalyzed: totalTranscripts,
+            trackerFound
+          })
+
+          console.log(`📈 ${person.name} - ${tracker.name}: ${percentage}% (${trackerFound}/${totalTranscripts})`)
+        }
+      }
+
+      setInsights(newInsights)
+      
+    } catch (error) {
+      console.error('Error calculating summary insights:', error)
+    }
+  }
+
+  // Updated main calculation function
+  const calculateInsights = async () => {
+    await analyzeAndStoreTrackers()
+  }
+
+  const getInsightForPersonAndTracker = (personId: string, trackerId: string) => {
+    return insights.find(i => i.personId === personId && i.trackerId === trackerId)
+  }
+
+  const getPercentageColor = (percentage: number) => {
+    if (percentage >= 80) return 'bg-green-100 text-green-800'
+    if (percentage >= 60) return 'bg-yellow-100 text-yellow-800'
+    if (percentage >= 40) return 'bg-orange-100 text-orange-800'
+    return 'bg-red-100 text-red-800'
+  }
+
+  if (loading) {
+    return (
+      <div className="p-10">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
+        </div>
+      </div>
+    )
+  }
+
   return (
-    <div className="p-10">
-      <h1 className="text-3xl font-bold mb-4">Insights</h1>
-      <p className="text-muted-foreground">This is the Insights page. Add your insights and analytics here.</p>
+    <div className="p-6">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Tracker Insights</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Percentage of calls in this period owned by this team in which tracker terms were mentioned, broken down by team
+          </p>
+        </div>
+        <div className="flex items-center space-x-4">
+          {!hasProcessedBefore && (
+            <Button
+              onClick={processAllTranscripts}
+              disabled={processing || people.length === 0}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              {processing ? 'Processing...' : 'Process All Transcripts'}
+            </Button>
+          )}
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-500">Team</span>
+            <span className="text-sm font-medium text-purple-600">Individuals</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Create Tracker Section */}
+      {showCreateTracker && (
+        <div className="bg-white border border-gray-200 rounded-lg p-4 mb-6">
+          <h3 className="text-lg font-semibold mb-4">Create New Tracker</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tracker Name
+              </label>
+              <input
+                type="text"
+                value={newTracker.name}
+                onChange={(e) => setNewTracker(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g., Next steps"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Description
+              </label>
+              <input
+                type="text"
+                value={newTracker.description}
+                onChange={(e) => setNewTracker(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="What this tracker analyzes"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Keywords (comma separated)
+              </label>
+              <input
+                type="text"
+                value={newTracker.keywords}
+                onChange={(e) => setNewTracker(prev => ({ ...prev, keywords: e.target.value }))}
+                placeholder="next steps, follow up, meeting"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              />
+            </div>
+          </div>
+          <div className="flex items-center space-x-3 mt-4">
+            <Button 
+              onClick={createTracker}
+              disabled={!newTracker.name.trim()}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              Create Tracker
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => setShowCreateTracker(false)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Main Grid */}
+      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+        {/* Header Row - Fixed 7 Columns */}
+        <div className="bg-gray-50 border-b border-gray-200">
+          <div className="grid" style={{ gridTemplateColumns: `300px repeat(7, 150px) 100px` }}>
+            <div className="p-4 font-medium text-gray-900">Person</div>
+            
+            <div className="p-4 border-l border-gray-200">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="text-xs font-medium text-gray-900">Introduction</span>
+              </div>
+            </div>
+            
+            <div className="p-4 border-l border-gray-200">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-xs font-medium text-gray-900">Rapport Building</span>
+              </div>
+            </div>
+            
+            <div className="p-4 border-l border-gray-200">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                <span className="text-xs font-medium text-gray-900">Patient Concerns</span>
+              </div>
+            </div>
+            
+            <div className="p-4 border-l border-gray-200">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                <span className="text-xs font-medium text-gray-900">Facial Assessment</span>
+              </div>
+            </div>
+            
+            <div className="p-4 border-l border-gray-200">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-pink-500 rounded-full"></div>
+                <span className="text-xs font-medium text-gray-900">Treatment Plan</span>
+              </div>
+            </div>
+            
+            <div className="p-4 border-l border-gray-200">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                <span className="text-xs font-medium text-gray-900">Pricing Questions</span>
+              </div>
+            </div>
+            
+            <div className="p-4 border-l border-gray-200">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-indigo-500 rounded-full"></div>
+                <span className="text-xs font-medium text-gray-900">Follow-up Booking</span>
+              </div>
+            </div>
+            
+            <div className="p-4 border-l border-gray-200">
+              <span className="text-xs text-gray-500">Actions</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Data Rows */}
+        {people.length === 0 ? (
+          <div className="p-8 text-center text-gray-500">
+            <User className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <p>No people found in transcripts</p>
+            <p className="text-sm">People will appear here once transcripts with speaker data are available</p>
+          </div>
+        ) : (
+          people.map(person => (
+            <div key={person.id} className="border-b border-gray-100 last:border-b-0">
+              <div className="grid" style={{ gridTemplateColumns: `300px repeat(7, 150px) 100px` }}>
+                <div className="p-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                      <span className="text-sm font-medium text-purple-600">
+                        {person.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      <div className="font-medium text-gray-900">{person.name}</div>
+                      <div className="text-sm text-gray-500">{person.role}</div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Fixed 7 tracker columns */}
+                {['introduction', 'rapport-building', 'listening-to-concerns', 'facial-assessment', 'treatment-plan', 'pricing-questions', 'follow-up-booking'].map(trackerId => {
+                  const insight = getInsightForPersonAndTracker(person.id, trackerId)
+                  const percentage = insight?.percentage || 0
+                  
+                  return (
+                    <div key={trackerId} className="p-4 border-l border-gray-100">
+                      <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPercentageColor(percentage)}`}>
+                        {percentage}% AVG
+                      </div>
+                    </div>
+                  )
+                })}
+                
+                <div className="p-4 border-l border-gray-100">
+                  <button className="p-1 hover:bg-gray-100 rounded">
+                    <MoreVertical className="w-4 h-4 text-gray-400" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Empty State for Trackers */}
+      {trackers.length === 0 && !showCreateTracker && (
+        <div className="text-center py-12">
+          <Target className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No trackers yet</h3>
+          <p className="text-gray-500 mb-6">Create your first tracker to start analyzing conversations</p>
+          <Button 
+            onClick={() => setShowCreateTracker(true)}
+            className="bg-purple-600 hover:bg-purple-700"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create First Tracker
+          </Button>
+        </div>
+      )}
     </div>
   )
 } 

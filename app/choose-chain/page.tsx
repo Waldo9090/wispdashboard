@@ -112,7 +112,7 @@ export default function ChooseChainPage() {
         <CardHeader className="text-center pb-6">
           <div className="flex items-center justify-center mb-4">
             <img 
-              src="/candylogo.png" 
+              src="/logorcandy.png" 
               alt="Wisp AI Logo" 
               className="w-10 h-10 object-contain"
             />

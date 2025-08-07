@@ -9,7 +9,12 @@ const inter = Inter({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: "Candytrail - The end-to-end AI sales co-pilot",
   description: "Candytrail finds high-intent leads and auto-coaches reps to close more deals, faster.",
-    generator: 'v0.dev'
+  generator: 'v0.dev',
+  icons: {
+    icon: '/logorcandy.png',
+    shortcut: '/logorcandy.png',
+    apple: '/logorcandy.png',
+  },
 }
 
 export default function RootLayout({

@@ -31,11 +31,11 @@ export default function DashboardLayout({
         <div className="p-6 border-b border-border">
           <div className="flex items-center space-x-3">
             <Image 
-              src="/images/wisp-logo.png"
+              src="/logorcandy.png"
               alt="Wisp AI Logo"
               width={32}
               height={32}
-              className="rounded-lg"
+              className="rounded-lg object-contain"
             />
             <span className="text-lg font-semibold text-foreground">WISP AI</span>
           </div>

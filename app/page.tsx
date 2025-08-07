@@ -1,5 +1,8 @@
+"use client"
+
 import Link from "next/link"
 import Image from "next/image"
+import { useState, useEffect } from "react"
 import { ArrowRight, Target, Server, Settings, CalendarDays, Clock, LineChart, Zap, Users, Rocket, MessageCircle, Mic, BarChart3 } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { CounterUp } from "@/components/ui/counter-up"
@@ -8,18 +11,33 @@ import { InteractiveDataSection } from "@/components/interactive-data-section"
 import { InteractiveSalesCoachingSection } from "@/components/interactive-sales-coaching-section" // Import the new component
 
 export default function LandingPage() {
+  const [isScrolled, setIsScrolled] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50)
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
 return (
   <div className="min-h-screen bg-custom-light-bg font-sans">
     {/* Header/Navbar */}
-    <header className="flex items-center justify-between px-4 py-4 md:px-8 lg:px-12 bg-custom-light-bg">
+    <header className={`fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-4 md:px-8 lg:px-12 transition-all duration-300 ${
+      isScrolled 
+        ? 'bg-black/20 backdrop-blur-md border-b border-white/10' 
+        : 'bg-transparent'
+    }`}>
       <Link href="#" className="flex items-center space-x-2">
-        <Image src="/candylogo.png" width={24} height={24} alt="Candytrail Logo" className="h-6 w-6" />
-        <span className="text-xl font-bold text-text-light-primary">candytrail</span>
+        <Image src="/logorcandy.png" width={24} height={24} alt="Candytrail Logo" className="h-6 w-6" />
+        <span className="text-xl font-bold text-white drop-shadow-md">candytrail</span>
       </Link>
 
       <div className="flex items-center space-x-4">
         <Link href="/signin">
-          <Button variant="outline" className="border-text-light-primary text-text-light-primary hover:bg-text-light-primary hover:text-white px-6 py-2 rounded-md">
+          <Button variant="outline" className="border-white text-white hover:bg-white hover:text-gray-900 px-6 py-2 rounded-md backdrop-blur-sm bg-white/10">
             Login
           </Button>
         </Link>
@@ -33,7 +51,7 @@ return (
 
     <main>
       {/* Hero Section with Video Background */}
-      <section className="relative py-16 md:py-24 lg:py-32 bg-custom-light-bg overflow-hidden">
+      <section className="relative pt-24 pb-16 md:pt-32 md:pb-24 lg:pt-40 lg:pb-32 bg-custom-light-bg overflow-hidden">
         <video
           className="absolute inset-0 w-full h-full object-cover z-0"
           autoPlay
@@ -45,8 +63,9 @@ return (
         <div className="absolute inset-0 bg-black opacity-50 z-0"></div> {/* Overlay for readability */}
         <div className="container relative z-10 grid lg:grid-cols-2 gap-12 items-center px-4 md:px-8 lg:px-12 text-text-dark-primary">
           <div className="space-y-6">
-            <div className="inline-flex items-center rounded-full bg-accent-pink px-3 py-1 text-xs font-medium text-primary-pink">
-              Backed by Y-Combinator
+            <div className="inline-flex items-center rounded-full bg-gray-800 px-3 py-2 text-xs font-medium text-white space-x-2">
+              <Image src="/yclogothing.svg" width={16} height={16} alt="Y Combinator Logo" className="h-4 w-4 object-contain" />
+              <span>Backed by Y Combinator</span>
             </div>
             <AnimatedHeading
               baseText="Sales automated with AI that "

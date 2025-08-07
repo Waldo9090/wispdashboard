@@ -54,7 +54,7 @@ export default function DemoPage() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-4">
             <img 
-              src="/candylogo.png" 
+              src="/logorcandy.png" 
               alt="Wisp AI Logo" 
               className="w-8 h-8 object-contain"
             />
