@@ -7,8 +7,8 @@ import { AuthProvider } from "@/context/auth-context"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "WispAI - Medical Spa Revenue Intelligence",
-  description: "Transform client conversations into revenue intelligence for medical spas with WispAI",
+  title: "Candytrail - The end-to-end AI sales co-pilot",
+  description: "Candytrail finds high-intent leads and auto-coaches reps to close more deals, faster.",
     generator: 'v0.dev'
 }
 
