@@ -4,70 +4,60 @@ import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 
 // Custom visual components
-const VisibilityVisual = () => (
+const ClarityVisual = () => (
   <svg width="600" height="400" viewBox="0 0 600 400" className="w-full h-full">
-    <rect width="600" height="400" fill="#f8fafc" rx="12" />
+    {/* Background */}
+    <rect width="600" height="400" fill="#f8fafc" />
     
-    {/* Call recording interface */}
-    <rect x="50" y="60" width="500" height="280" fill="#ffffff" rx="8" stroke="#e2e8f0" strokeWidth="2" />
+    {/* Main dashboard frame */}
+    <rect x="50" y="50" width="500" height="300" fill="white" stroke="#e2e8f0" strokeWidth="2" rx="8" />
     
-    {/* Header bar */}
-    <rect x="50" y="60" width="500" height="50" fill="#1e293b" rx="8" />
-    <circle cx="80" cy="85" r="6" fill="#ef4444" />
-    <circle cx="100" cy="85" r="6" fill="#f59e0b" />
-    <circle cx="120" cy="85" r="6" fill="#10b981" />
-    <text x="150" y="90" fill="#ffffff" fontSize="14" fontWeight="bold">Sales Call Recording</text>
+    {/* Header */}
+    <rect x="50" y="50" width="500" height="60" fill="#f1f5f9" stroke="#e2e8f0" strokeWidth="2" rx="8" />
+    <text x="80" y="85" fill="#1e293b" fontSize="18" fontWeight="bold">Sales Call Dashboard</text>
     
-    {/* Recording indicator */}
-    <circle cx="480" cy="85" r="8" fill="#ef4444">
+    {/* Call recording indicator */}
+    <circle cx="520" cy="80" r="8" fill="#ef4444">
       <animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite" />
     </circle>
-    <text x="495" y="90" fill="#ffffff" fontSize="12">REC</text>
+    <text x="535" y="85" fill="#ef4444" fontSize="12" fontWeight="bold">LIVE</text>
     
-    {/* Audio waveform */}
-    <rect x="70" y="140" width="460" height="80" fill="#f1f5f9" rx="6" />
-    <text x="80" y="160" fill="#64748b" fontSize="12" fontWeight="bold">Audio Waveform</text>
+    {/* Call list */}
+    <rect x="70" y="130" width="200" height="200" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1" rx="4" />
+    <text x="85" y="155" fill="#475569" fontSize="14" fontWeight="bold">Recent Calls</text>
     
-    {/* Animated waveform bars */}
-    <g transform="translate(80, 170)">
-      {[...Array(20)].map((_, i) => (
-        <rect key={i} x={i * 20} y="20" width="8" height="30" fill="#ec4899" opacity="0.6" rx="2">
-          <animate attributeName="height" values="10;40;20;30;15" dur="2s" begin={`${i * 0.1}s`} repeatCount="indefinite" />
-          <animate attributeName="y" values="35;5;25;15;30" dur="2s" begin={`${i * 0.1}s`} repeatCount="indefinite" />
-        </rect>
-      ))}
-    </g>
+    {/* Call items */}
+    <rect x="80" y="170" width="180" height="40" fill="white" stroke="#e2e8f0" strokeWidth="1" rx="4" />
+    <text x="95" y="190" fill="#1e293b" fontSize="12" fontWeight="medium">Sarah Johnson - Acme Corp</text>
+    <text x="95" y="205" fill="#64748b" fontSize="10">2 minutes ago • 15:32</text>
     
-    {/* Transcription area */}
-    <rect x="70" y="240" width="460" height="80" fill="#f8fafc" rx="6" stroke="#e2e8f0" strokeWidth="1" />
-    <text x="80" y="260" fill="#475569" fontSize="12" fontWeight="bold">Live Transcription</text>
+    <rect x="80" y="220" width="180" height="40" fill="white" stroke="#e2e8f0" strokeWidth="1" rx="4" />
+    <text x="95" y="240" fill="#1e293b" fontSize="12" fontWeight="medium">Mike Chen - TechStart</text>
+    <text x="95" y="255" fill="#64748b" fontSize="10">5 minutes ago • 15:28</text>
     
-    {/* Speaker labels and text */}
-    <g transform="translate(80, 270)">
-      <rect width="80" height="20" fill="#ddd6fe" rx="10" />
-      <text x="12" y="14" fill="#7c3aed" fontSize="10" fontWeight="bold">Sales Rep</text>
-      <text x="90" y="14" fill="#374151" fontSize="11">Hi John, thanks for joining the call today...</text>
-      
-      <rect y="25" width="80" height="20" fill="#fecaca" rx="10" />
-      <text x="15" y="39" fill="#dc2626" fontSize="10" fontWeight="bold">Customer</text>
-      <text x="90" y="39" fill="#374151" fontSize="11">Thanks for reaching out. I'm interested in...</text>
-    </g>
+    <rect x="80" y="270" width="180" height="40" fill="white" stroke="#e2e8f0" strokeWidth="1" rx="4" />
+    <text x="95" y="290" fill="#1e293b" fontSize="12" fontWeight="medium">Lisa Park - GrowthCo</text>
+    <text x="95" y="305" fill="#64748b" fontSize="10">12 minutes ago • 15:18</text>
     
-    {/* Playback controls */}
-    <g transform="translate(250, 350)">
-      <circle cx="0" cy="0" r="20" fill="#ec4899" />
-      <polygon points="-8,-8 -8,8 8,0" fill="white" />
-      
-      <circle cx="50" cy="0" r="15" fill="#6b7280" />
-      <rect x="46" y="-6" width="3" height="12" fill="white" />
-      <rect x="51" y="-6" width="3" height="12" fill="white" />
-      
-      <circle cx="100" cy="0" r="15" fill="#6b7280" />
-      <rect x="96" y="-6" width="8" height="12" fill="white" />
-    </g>
+    {/* Call details */}
+    <rect x="290" y="130" width="240" height="200" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1" rx="4" />
+    <text x="305" y="155" fill="#475569" fontSize="14" fontWeight="bold">Call Details</text>
     
-    {/* Time indicator */}
-    <text x="300" y="385" fill="#6b7280" fontSize="12" textAnchor="middle">12:34 / 45:67</text>
+    {/* Transcript preview */}
+    <rect x="305" y="170" width="210" height="120" fill="white" stroke="#e2e8f0" strokeWidth="1" rx="4" />
+    <text x="320" y="190" fill="#1e293b" fontSize="12" fontWeight="bold">Transcript Preview</text>
+    <text x="320" y="210" fill="#64748b" fontSize="10">Sarah: "I understand your concerns about the pricing..."</text>
+    <text x="320" y="225" fill="#64748b" fontSize="10">Client: "Yes, we're looking for something more..."</text>
+    <text x="320" y="240" fill="#64748b" fontSize="10">Sarah: "Let me show you our enterprise package..."</text>
+    <text x="320" y="255" fill="#64748b" fontSize="10">Client: "That sounds more in line with our budget."</text>
+    <text x="320" y="270" fill="#64748b" fontSize="10">Sarah: "Perfect! Let me send you the proposal..."</text>
+    
+    {/* Status indicators */}
+    <rect x="305" y="300" width="100" height="20" fill="#dcfce7" stroke="#22c55e" strokeWidth="1" rx="10" />
+    <text x="355" y="315" fill="#166534" fontSize="10" textAnchor="middle" fontWeight="bold">CLOSED</text>
+    
+    <rect x="415" y="300" width="100" height="20" fill="#fef3c7" stroke="#f59e0b" strokeWidth="1" rx="10" />
+    <text x="465" y="315" fill="#92400e" fontSize="10" textAnchor="middle" fontWeight="bold">$25K DEAL</text>
   </svg>
 )
 
@@ -277,8 +267,8 @@ interface TabContent {
 }
 
 const tabData: Record<string, TabContent> = {
-  'VISIBILITY': {
-    tag: 'VISIBILITY',
+  'CLARITY': {
+    tag: 'CLARITY',
     title: 'Hear what your team actually says',
     description: 'Wisp automatically records and transcribes every sales call—so managers don\'t have to guess what happened. Get full visibility into every rep\'s conversations, from first pitch to close.',
     buttonText: 'Book Demo',
@@ -301,7 +291,7 @@ const tabData: Record<string, TabContent> = {
 }
 
 export function InteractiveSalesCoachingSection() {
-  const [activeTab, setActiveTab] = useState('VISIBILITY')
+  const [activeTab, setActiveTab] = useState('CLARITY')
   const currentContent = tabData[activeTab]
 
   return (
@@ -348,7 +338,7 @@ export function InteractiveSalesCoachingSection() {
           </div>
           <div className="flex justify-center items-center">
             <div className="w-full h-full max-w-[600px] max-h-[400px] flex items-center justify-center">
-              {activeTab === 'VISIBILITY' && <VisibilityVisual />}
+              {activeTab === 'CLARITY' && <ClarityVisual />}
               {activeTab === 'COACHING' && <CoachingVisual />}
               {activeTab === 'INTELLIGENCE' && <IntelligenceVisual />}
             </div>
