@@ -147,6 +147,8 @@ return (
               </div>
               <p className="text-text-dark-muted">
                 Your reps talks to your customers.
+                <br />
+                They try to close the deal.
               </p>
               <div className="w-full h-1 bg-accent-pink mt-4" />
             </div>

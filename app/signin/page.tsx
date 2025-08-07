@@ -309,7 +309,7 @@ export default function SignInPage() {
               alt="Wisp AI Logo" 
               className="w-10 h-10 object-contain"
             />
-            <span className="text-2xl font-bold text-foreground ml-3">Wisp AI</span>
+            <span className="text-2xl font-bold text-foreground ml-3">Candytrail</span>
           </div>
           <CardTitle className="text-2xl font-bold text-foreground">Welcome back</CardTitle>
           <p className="text-muted-foreground mt-2">Sign in to your account</p>
