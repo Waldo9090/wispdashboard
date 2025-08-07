@@ -53,9 +53,11 @@ export default function DemoPage() {
       <div className="container mx-auto max-w-2xl">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-4">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Mic className="w-5 h-5 text-primary-foreground" />
-            </div>
+            <img 
+              src="/candylogo.png" 
+              alt="Wisp AI Logo" 
+              className="w-8 h-8 object-contain"
+            />
             <span className="text-xl font-bold text-foreground">Wisp AI</span>
           </div>
           <h1 className="text-3xl font-bold mb-2 text-foreground">Book Your Demo</h1>

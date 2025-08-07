@@ -304,9 +304,11 @@ export default function SignInPage() {
       <Card className="w-full max-w-md shadow-sm border border-border">
         <CardHeader className="text-center pb-6">
           <div className="flex items-center justify-center mb-4">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <Mic className="w-6 h-6 text-primary-foreground" />
-            </div>
+            <img 
+              src="/candylogo.png" 
+              alt="Wisp AI Logo" 
+              className="w-10 h-10 object-contain"
+            />
             <span className="text-2xl font-bold text-foreground ml-3">Wisp AI</span>
           </div>
           <CardTitle className="text-2xl font-bold text-foreground">Welcome back</CardTitle>

@@ -89,7 +89,7 @@ export default function TranscriptDetailPage() {
                 name: timestampData.name || timestampData.transcriptName || "Untitled",
                 transcriptName: timestampData.transcriptName,
                 notes: timestampData.notes || "",
-                speakerTranscript: timestampData.speakerTranscript || [],
+                speakerTranscript: timestampData.speakerTranscript || timestampData['speaker transcript'] || [],
                 status: timestampData.status || "completed",
                 timestamp: timestampData.timestamp,
                 transcript: timestampData.transcript || "",
@@ -197,8 +197,6 @@ export default function TranscriptDetailPage() {
       
       // Reload comments
       loadExistingComments(transcriptDocumentId)
-      
-      alert('Comment saved successfully!')
     } catch (error) {
       console.error('❌ Error saving comment:', error)
       alert('Error saving comment. Please try again.')
@@ -433,19 +431,11 @@ export default function TranscriptDetailPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-gray-900">Conversation</h3>
-                  {transcript?.speakerTranscript && transcript.speakerTranscript.length > 0 && (
-                    <button
-                      onClick={() => setShowFullTranscript(!showFullTranscript)}
-                      className="text-sm text-purple-600 hover:text-purple-700"
-                    >
-                      {showFullTranscript ? 'Collapse' : 'Expand All'}
-                    </button>
-                  )}
                 </div>
 
                 {transcript?.speakerTranscript && transcript.speakerTranscript.length > 0 ? (
                   <div className="space-y-3">
-                    {transcript.speakerTranscript.slice(0, showFullTranscript ? undefined : 3).map((speaker, index) => (
+                    {transcript.speakerTranscript.map((speaker, index) => (
                       <div key={index} className="bg-gray-50 rounded-lg p-4 border border-gray-100">
                         <div className="flex items-start space-x-3">
                           <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -480,14 +470,6 @@ export default function TranscriptDetailPage() {
                         </div>
                       </div>
                     ))}
-                    {!showFullTranscript && transcript.speakerTranscript.length > 3 && (
-                      <button
-                        onClick={() => setShowFullTranscript(true)}
-                        className="w-full text-center py-2 text-sm text-purple-600 hover:text-purple-700"
-                      >
-                        Show {transcript.speakerTranscript.length - 3} more entries
-                      </button>
-                    )}
                   </div>
                 ) : (
                   <div className="text-center py-8 text-gray-500">
@@ -502,21 +484,38 @@ export default function TranscriptDetailPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-gray-900">Meeting Notes</h3>
-                  {transcript?.notes && (
-                    <Button
-                      onClick={() => router.push(`/dashboard/activity/notes/${transcript.id}`)}
-                      size="sm"
-                      className="bg-purple-600 hover:bg-purple-700 text-white"
-                    >
-                      View Full
-                    </Button>
-                  )}
                 </div>
                 
                 {transcript?.notes ? (
                   <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
                     <div className="prose prose-sm max-w-none text-gray-700">
-                      {transcript.notes.replace(/[#*`]/g, '')}
+                      <div dangerouslySetInnerHTML={{
+                        __html: transcript.notes
+                          // Remove horizontal rules
+                          .replace(/---+/g, '<hr class="my-4 border-gray-300" />')
+                          // Convert headers to bold HTML (## first, then #)
+                          .replace(/## ([^\n]+)/g, '<h4 class="text-base font-semibold text-gray-800 mt-3 mb-2">$1</h4>')
+                          .replace(/# ([^\n]+)/g, '<h3 class="text-lg font-bold text-gray-900 mt-4 mb-2">$1</h3>')
+                          // Convert bullet points
+                          .replace(/^\* (.+)$/gm, '<li class="ml-4 mb-1">$1</li>')
+                          // Convert blockquotes
+                          .replace(/^> (.+)$/gm, '<blockquote class="border-l-4 border-blue-400 bg-blue-50 pl-4 py-2 my-2 italic text-gray-700">$1</blockquote>')
+                          // Convert bold text
+                          .replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold">$1</strong>')
+                          // Convert line breaks and paragraphs
+                          .split('\n\n')
+                          .map(paragraph => {
+                            if (paragraph.includes('<li')) {
+                              return '<ul class="list-disc mb-3 ml-4">' + paragraph + '</ul>';
+                            } else if (paragraph.includes('<h3') || paragraph.includes('<h4') || paragraph.includes('<blockquote') || paragraph.includes('<hr')) {
+                              return paragraph;
+                            } else if (paragraph.trim()) {
+                              return '<p class="mb-2">' + paragraph.replace(/\n/g, '<br/>') + '</p>';
+                            }
+                            return '';
+                          })
+                          .join('')
+                      }} />
                     </div>
                   </div>
                 ) : (
@@ -537,7 +536,7 @@ export default function TranscriptDetailPage() {
         {!leftSidebarOpen && (
           <button
             onClick={() => setLeftSidebarOpen(true)}
-            className="fixed left-[516px] top-20 z-10 bg-white border border-gray-200 rounded-lg p-3 shadow-lg hover:shadow-xl transition-shadow"
+            className="fixed left-[504px] top-20 z-10 bg-white border border-gray-200 rounded-lg p-3 shadow-lg hover:shadow-xl transition-shadow"
             title="Open sidebar"
           >
             <Menu className="w-5 h-5 text-gray-600" />
