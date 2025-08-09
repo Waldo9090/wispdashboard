@@ -18,8 +18,14 @@ export default function LandingPage() {
       setIsScrolled(window.scrollY > 50)
     }
 
+    // Add smooth scrolling behavior to the entire page
+    document.documentElement.style.scrollBehavior = 'smooth'
+    
     window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      document.documentElement.style.scrollBehavior = 'auto'
+    }
   }, [])
 
 return (

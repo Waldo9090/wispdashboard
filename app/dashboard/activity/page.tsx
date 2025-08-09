@@ -570,7 +570,7 @@ export default function Dashboard() {
     if (!isEmailAuthorized) {
       router.push('/');
       return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="min-h-screen bg-background flex items-center justify-center p-4 font-sans">
           <div className="text-center">
             <h1 className="text-xl font-bold text-foreground mb-2">🚫 Unauthorized User</h1>
             <p className="text-muted-foreground">Redirecting to main page...</p>
@@ -643,14 +643,17 @@ export default function Dashboard() {
     return (
       <>
         {beforeText}
-        <span className="relative inline-block bg-yellow-200 text-slate-900 px-1 rounded group">
+        <span className="bg-yellow-200 text-slate-900 px-1 rounded">
           {highlightedText}
+        </span>
+        <span className="relative inline-block group">
           <button
             onClick={(e) => {
               e.stopPropagation()
               setHighlightedText(null)
             }}
-            className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600 flex items-center justify-center"
+            className="ml-1 w-4 h-4 bg-red-500 text-white rounded-full text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-600 flex items-center justify-center align-top"
+            title="Remove highlight"
           >
             ×
           </button>
@@ -1335,21 +1338,47 @@ export default function Dashboard() {
       
       const response = await fetch(`/api/get-locations?chainId=${encodeURIComponent(chainId)}`)
       
+      console.log('🔍 [CLIENT] Response status:', response.status)
+      console.log('🔍 [CLIENT] Response headers:', Object.fromEntries(response.headers.entries()))
+      
+      // Get the response text first to check if it's valid JSON
+      const responseText = await response.text()
+      console.log('🔍 [CLIENT] Raw response text:', responseText.substring(0, 500))
+      
       if (!response.ok) {
-        const errorData = await response.json()
-        console.error('❌ API Error:', errorData)
-
+        console.error('❌ [CLIENT] API Error - Response not OK')
+        console.error('❌ [CLIENT] Status:', response.status)
+        console.error('❌ [CLIENT] Status Text:', response.statusText)
+        console.error('❌ [CLIENT] Response Text:', responseText)
+        
+        // Try to parse as JSON for error details
+        let errorData = null
+        try {
+          errorData = JSON.parse(responseText)
+          console.error('❌ [CLIENT] Parsed error data:', errorData)
+        } catch (jsonError) {
+          console.error('❌ [CLIENT] Response is not valid JSON:', jsonError)
+          console.error('❌ [CLIENT] HTML/Text response received instead of JSON')
+        }
         
         if (response.status === 404) {
-          //console.log(`❌ Chain '${chainId}' not found`)
           setLocations([])
           return
         }
         
-        throw new Error(`API request failed: ${response.status} ${response.statusText}`)
+        throw new Error(`API request failed: ${response.status} ${response.statusText} - Response: ${responseText.substring(0, 200)}`)
       }
       
-      const data = await response.json()
+      // Parse the JSON response
+      let data
+      try {
+        data = JSON.parse(responseText)
+        console.log('✅ [CLIENT] Successfully parsed JSON response')
+      } catch (jsonError) {
+        console.error('❌ [CLIENT] JSON parsing failed:', jsonError)
+        console.error('❌ [CLIENT] Response text that failed to parse:', responseText.substring(0, 1000))
+        throw new Error(`Invalid JSON response from server: ${jsonError}`)
+      }
       //console.log('📋 API Response:', data)
       
       if (!data.success) {
@@ -2333,14 +2362,14 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center font-sans">
         <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-white">
+    <div className="flex flex-col min-h-screen bg-white font-sans">
       {/* Header */}
       <header className="bg-white border-b border-gray-100 px-6 py-4">
         <div className="flex items-center justify-between">

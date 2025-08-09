@@ -89,6 +89,18 @@ const nextConfig = {
         worker_threads: false,
       }
     }
+
+    // Handle Firebase ESM modules properly
+    config.externals = config.externals || []
+    if (isServer) {
+      config.externals.push({
+        'firebase/app': 'firebase/app',
+        'firebase/firestore': 'firebase/firestore',
+        'firebase/auth': 'firebase/auth',
+        'firebase/storage': 'firebase/storage'
+      })
+    }
+    
     return config
   },
 }

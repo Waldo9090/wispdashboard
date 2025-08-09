@@ -25,19 +25,20 @@ export default function DashboardLayout({
   const { user } = useAuth()
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background font-sans">
       {/* Sidebar */}
       <div className="fixed left-0 top-0 h-full w-64 bg-card border-r border-border flex flex-col">
-        <div className="p-6 border-b border-border">
+        <div className="p-4 border-b border-border">
           <div className="flex items-center space-x-3">
-            <Image 
+            <Image
               src="/logocandyprob.png"
-              alt="Wisp AI Logo"
+              alt="candytrail"
               width={32}
               height={32}
-              className="rounded-lg object-contain"
+              className="w-auto h-8"
+              priority
             />
-            <span className="text-lg font-semibold text-foreground">WISP AI</span>
+            <span className="text-lg font-semibold text-foreground">candytrail</span>
           </div>
         </div>
 

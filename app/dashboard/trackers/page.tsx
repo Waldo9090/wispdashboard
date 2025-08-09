@@ -2,7 +2,7 @@ import { ConversationTrackersView } from '@/components/conversation-trackers-vie
 
 export default function TrackersPage() {
   return (
-    <div className="p-8">
+    <div className="p-8 font-sans">
       <ConversationTrackersView />
     </div>
   )
