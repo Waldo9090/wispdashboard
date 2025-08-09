@@ -9,8 +9,8 @@ import { useAuth } from "@/context/auth-context"
 
 const sidebarItems = [
   { icon: ActivitySquare, label: "Activity", href: "/dashboard/activity" as const },
-  { icon: BarChart3, label: "Analysis", href: "/dashboard/trackers" as const },
-  { icon: Sparkles, label: "Trackers", href: "/dashboard/insights" as const },
+  { icon: BarChart3, label: "Word Trackers", href: "/dashboard/trackers" as const },
+  { icon: Sparkles, label: "Smart Trackers", href: "/dashboard/insights" as const },
   // { icon: MessageSquare, label: "Chat", href: "/dashboard/chat" as const },
 ]
 

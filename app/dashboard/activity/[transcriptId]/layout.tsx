@@ -15,8 +15,8 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/componen
 
 const sidebarItems = [
   { icon: ActivitySquare, label: "Activity", href: "/dashboard/activity" as const },
-  { icon: Target, label: "Analysis", href: "/dashboard/trackers" as const },
-  { icon: BarChart3, label: "Trackers", href: "/dashboard/insights" as const },
+  { icon: Target, label: "Word Trackers", href: "/dashboard/trackers" as const },
+  { icon: BarChart3, label: "Smart Trackers", href: "/dashboard/insights" as const },
 ]
 
 const centerSectionTabs = [

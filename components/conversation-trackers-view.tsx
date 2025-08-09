@@ -588,7 +588,7 @@ export function ConversationTrackersView() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold">Conversation Trackers</h2>
+          <h2 className="text-3xl font-bold">Word Trackers</h2>
           <p className="text-muted-foreground">Organized by stages, clusters, and conversation transcripts</p>
         </div>
         <div className="flex gap-2">
@@ -703,7 +703,7 @@ export function ConversationTrackersView() {
         {/* Left Side - Cluster Labels */}
         <Card>
           <CardHeader>
-            <CardTitle>Conversation Trackers</CardTitle>
+            <CardTitle>Word Trackers</CardTitle>
             <CardDescription>
               Cluster labels showing common phrases and discussion topics
             </CardDescription>

@@ -840,7 +840,7 @@ export default function InsightsPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tracker Insights</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Smart Trackers</h1>
           <p className="text-sm text-gray-500 mt-1">
             Percentage of calls in this period owned by this team in which tracker terms were mentioned, broken down by team
           </p>
