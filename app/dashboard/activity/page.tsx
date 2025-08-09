@@ -2390,23 +2390,7 @@ export default function Dashboard() {
         </div>
       </header>
       {/* Content */}
-      <main className="flex-1 p-6">
-        {/* Tabs */}
-        <div className="flex space-x-8 mb-8 border-b border-gray-100">
-          {["ACTIVITY"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`pb-4 font-medium transition-colors ${
-                activeTab === tab
-                  ? "text-gray-900 border-b-2 border-gray-900"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
+      <main className="flex-1 px-12 py-6">
         {/* Performance Metrics */}
         <div className="grid grid-cols-1 gap-6 mb-8">
           <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
@@ -2426,7 +2410,9 @@ export default function Dashboard() {
 
         {/* Main Content */}
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          {renderTabContent()}
+          <div className="px-8">
+            {renderTabContent()}
+          </div>
         </div>
       </main>
       

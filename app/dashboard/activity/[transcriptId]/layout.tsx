@@ -15,8 +15,8 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/componen
 
 const sidebarItems = [
   { icon: ActivitySquare, label: "Activity", href: "/dashboard/activity" as const },
-  { icon: Target, label: "Trackers", href: "/dashboard/trackers" as const },
-  { icon: BarChart3, label: "Insights", href: "/dashboard/insights" as const },
+  { icon: Target, label: "Analysis", href: "/dashboard/trackers" as const },
+  { icon: BarChart3, label: "Trackers", href: "/dashboard/insights" as const },
 ]
 
 const centerSectionTabs = [
@@ -603,6 +603,112 @@ export default function ActivityLayout({
                               </div>
                             </div>
                           )}
+                          
+                          {/* Tracker Analysis Section */}
+                          {insightsData?.trackerScoring && (
+                            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Tracker Analysis</h3>
+                              <div className="space-y-3">
+                                {['introduction', 'rapport-building', 'listening-to-concerns', 'facial-assessment', 'treatment-plan', 'pricing-questions', 'follow-up-booking'].map(trackerId => {
+                                  const trackerNames: Record<string, string> = {
+                                    'introduction': 'Introduction',
+                                    'rapport-building': 'Rapport Building',
+                                    'listening-to-concerns': 'Patient Concerns',
+                                    'facial-assessment': 'Facial Assessment',
+                                    'treatment-plan': 'Treatment Plan',
+                                    'pricing-questions': 'Pricing Questions',
+                                    'follow-up-booking': 'Follow-up Booking'
+                                  }
+                                  
+                                  const trackerName = trackerNames[trackerId] || trackerId.replace(/-/g, ' ')
+                                  const trackerData = insightsData.trackerScoring[trackerId]
+                                  const category = trackerData?.category || 'Missed'
+                                  const isMissed = category === 'Missed'
+                                  
+                                  return (
+                                    <div key={trackerId} className="flex items-center justify-between py-2">
+                                      <div className="flex items-center space-x-3">
+                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                                          isMissed ? 'bg-red-100 dark:bg-red-900/20' : 'bg-green-100 dark:bg-green-900/20'
+                                        }`}>
+                                          {isMissed ? (
+                                            <X className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                          ) : (
+                                            <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                            </svg>
+                                          )}
+                                        </div>
+                                        <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                          {trackerName}
+                                        </span>
+                                      </div>
+                                      <span className={`text-xs px-2 py-1 rounded-full ${
+                                        category === 'Strong Execution' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
+                                        category === 'Needs Improvement' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
+                                        'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                                      }`}>
+                                        {category}
+                                      </span>
+                                    </div>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ) : insightsData?.trackerScoring ? (
+                        <div className="space-y-6">
+                          {/* Show only Tracker Analysis if no sales performance data */}
+                          <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Tracker Analysis</h3>
+                            <div className="space-y-3">
+                              {['introduction', 'rapport-building', 'listening-to-concerns', 'facial-assessment', 'treatment-plan', 'pricing-questions', 'follow-up-booking'].map(trackerId => {
+                                const trackerNames: Record<string, string> = {
+                                  'introduction': 'Introduction',
+                                  'rapport-building': 'Rapport Building',
+                                  'listening-to-concerns': 'Patient Concerns',
+                                  'facial-assessment': 'Facial Assessment',
+                                  'treatment-plan': 'Treatment Plan',
+                                  'pricing-questions': 'Pricing Questions',
+                                  'follow-up-booking': 'Follow-up Booking'
+                                }
+                                
+                                const trackerName = trackerNames[trackerId] || trackerId.replace(/-/g, ' ')
+                                const trackerData = insightsData.trackerScoring[trackerId]
+                                const category = trackerData?.category || 'Missed'
+                                const isMissed = category === 'Missed'
+                                
+                                return (
+                                  <div key={trackerId} className="flex items-center justify-between py-2">
+                                    <div className="flex items-center space-x-3">
+                                      <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                                        isMissed ? 'bg-red-100 dark:bg-red-900/20' : 'bg-green-100 dark:bg-green-900/20'
+                                      }`}>
+                                        {isMissed ? (
+                                          <X className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                        ) : (
+                                          <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                                          </svg>
+                                        )}
+                                      </div>
+                                      <span className="text-sm font-medium text-gray-900 dark:text-white">
+                                        {trackerName}
+                                      </span>
+                                    </div>
+                                    <span className={`text-xs px-2 py-1 rounded-full ${
+                                      category === 'Strong Execution' ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' :
+                                      category === 'Needs Improvement' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
+                                      'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400'
+                                    }`}>
+                                      {category}
+                                    </span>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
                         </div>
                       ) : (
                         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
@@ -661,31 +767,6 @@ export default function ActivityLayout({
                         </div>
                       ) : transcriptData ? (
                         <div className="space-y-4 relative">
-                          {/* Floating deselect button */}
-                          {highlightedText && highlightPosition && (
-                            <button
-                              onClick={() => {
-                                // Remove highlighting
-                                const highlighted = document.getElementById('highlighted-text')
-                                if (highlighted && highlighted.parentNode) {
-                                  const parent = highlighted.parentNode
-                                  parent.replaceChild(document.createTextNode(highlighted.textContent || ''), highlighted)
-                                  parent.normalize()
-                                }
-                                setHighlightedText(null)
-                                setSelectedTextElement(null)
-                                setHighlightPosition(null)
-                              }}
-                              className="absolute w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs shadow-lg z-10 transition-all -translate-y-1/2"
-                              style={{
-                                top: `${highlightPosition.top}px`,
-                                left: `${highlightPosition.left + 4}px`
-                              }}
-                              title="Deselect text"
-                            >
-                              <X className="w-3 h-3" />
-                            </button>
-                          )}
                           
                           {transcriptData['speaker transcript'] && transcriptData['speaker transcript'].length > 0 ? (
                             <div className="space-y-4">
@@ -715,6 +796,14 @@ export default function ActivityLayout({
                                           className="text-gray-700 dark:text-gray-300 leading-relaxed cursor-pointer select-text transcript-text"
                                           data-transcript-text="true"
                                           onMouseUp={(e) => {
+                                            // Remove any existing highlights first
+                                            const existingHighlight = document.getElementById('highlighted-text')
+                                            if (existingHighlight && existingHighlight.parentNode) {
+                                              const parent = existingHighlight.parentNode
+                                              parent.replaceChild(document.createTextNode(existingHighlight.textContent || ''), existingHighlight)
+                                              parent.normalize()
+                                            }
+                                            
                                             const selection = window.getSelection()
                                             if (selection && selection.toString().trim()) {
                                               const range = selection.getRangeAt(0)
@@ -734,15 +823,34 @@ export default function ActivityLayout({
                                               
                                               // Apply yellow highlighting
                                               const span = document.createElement('span')
-                                              span.className = 'bg-yellow-200 dark:bg-yellow-700/50 relative'
+                                              span.className = 'bg-yellow-200 dark:bg-yellow-700/50 relative inline-block'
                                               span.id = 'highlighted-text'
+                                              
+                                              // Create X button element
+                                              const xButton = document.createElement('button')
+                                              xButton.className = 'absolute -top-2 -right-2 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs shadow-lg z-10 transition-all'
+                                              xButton.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>'
+                                              xButton.title = 'Deselect text'
+                                              xButton.onclick = () => {
+                                                const parent = span.parentNode
+                                                if (parent) {
+                                                  parent.replaceChild(document.createTextNode(span.textContent || ''), span)
+                                                  parent.normalize()
+                                                }
+                                                setHighlightedText(null)
+                                                setSelectedTextElement(null)
+                                                setHighlightPosition(null)
+                                              }
+                                              
                                               try {
                                                 range.surroundContents(span)
+                                                span.appendChild(xButton)
                                               } catch (error) {
                                                 // Fallback if range crosses element boundaries
                                                 span.textContent = range.toString()
                                                 range.deleteContents()
                                                 range.insertNode(span)
+                                                span.appendChild(xButton)
                                               }
                                               selection.removeAllRanges()
                                             }
@@ -773,6 +881,14 @@ export default function ActivityLayout({
                                       className="text-gray-700 dark:text-gray-300 leading-relaxed cursor-pointer select-text whitespace-pre-wrap transcript-text"
                                       data-transcript-text="true"
                                       onMouseUp={(e) => {
+                                        // Remove any existing highlights first
+                                        const existingHighlight = document.getElementById('highlighted-text')
+                                        if (existingHighlight && existingHighlight.parentNode) {
+                                          const parent = existingHighlight.parentNode
+                                          parent.replaceChild(document.createTextNode(existingHighlight.textContent || ''), existingHighlight)
+                                          parent.normalize()
+                                        }
+                                        
                                         const selection = window.getSelection()
                                         if (selection && selection.toString().trim()) {
                                           const range = selection.getRangeAt(0)
@@ -785,42 +901,40 @@ export default function ActivityLayout({
                                           
                                           // Apply yellow highlighting
                                           const span = document.createElement('span')
-                                          span.className = 'bg-yellow-200 dark:bg-yellow-700/50'
+                                          span.className = 'bg-yellow-200 dark:bg-yellow-700/50 relative inline-block'
                                           span.id = 'highlighted-text'
+                                          
+                                          // Create X button element
+                                          const xButton = document.createElement('button')
+                                          xButton.className = 'absolute -top-2 -right-2 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs shadow-lg z-10 transition-all'
+                                          xButton.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>'
+                                          xButton.title = 'Deselect text'
+                                          xButton.onclick = () => {
+                                            const parent = span.parentNode
+                                            if (parent) {
+                                              parent.replaceChild(document.createTextNode(span.textContent || ''), span)
+                                              parent.normalize()
+                                            }
+                                            setHighlightedText(null)
+                                            setSelectedTextElement(null)
+                                          }
+                                          
                                           try {
                                             range.surroundContents(span)
+                                            span.appendChild(xButton)
                                           } catch (error) {
                                             span.textContent = range.toString()
                                             range.deleteContents()
                                             range.insertNode(span)
+                                            span.appendChild(xButton)
                                           }
-                                          selection.removeAllRanges
+                                          selection.removeAllRanges()
                                         }
                                       }}
                                     >
                                       {transcriptData.transcript}
                                     </p>
                                     
-                                    {/* Deselect button */}
-                                    {highlightedText && selectedTextElement && (
-                                      <button
-                                        onClick={() => {
-                                          // Remove highlighting
-                                          const highlighted = document.getElementById('highlighted-text')
-                                          if (highlighted && highlighted.parentNode) {
-                                            const parent = highlighted.parentNode
-                                            parent.replaceChild(document.createTextNode(highlighted.textContent || ''), highlighted)
-                                            parent.normalize()
-                                          }
-                                          setHighlightedText(null)
-                                          setSelectedTextElement(null)
-                                        }}
-                                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs shadow-lg z-10"
-                                        title="Deselect text"
-                                      >
-                                        <X className="w-3 h-3" />
-                                      </button>
-                                    )}
                                   </div>
                                 </div>
                               </div>

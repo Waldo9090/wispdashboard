@@ -853,10 +853,6 @@ export default function InsightsPage() {
           >
             {processing ? 'Processing...' : (hasProcessedBefore ? 'Reprocess All Transcripts' : 'Process All Transcripts')}
           </Button>
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-500">Team</span>
-            <span className="text-sm font-medium text-purple-600">Individuals</span>
-          </div>
         </div>
       </div>
 
