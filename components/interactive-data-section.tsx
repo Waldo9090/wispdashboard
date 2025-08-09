@@ -299,7 +299,7 @@ interface TabContent {
 const tabData: Record<string, TabContent> = {
   'INTELLIGENT LEAD DISCOVERY': {
     title: 'Custom-built lead lists, not cookie-cutter data',
-    description: 'Stop buying stale lists. Wisp\'s AI agents crawl the web to surface high-intent leads actively searching for your solution—so your pipeline starts with buyers, not browsers.',
+    description: 'Stop buying stale lists. Candytrail\'s AI agents crawl the web to surface high-intent leads actively searching for your solution—so your pipeline starts with buyers, not browsers.',
   },
   'AI OUTREACH': {
     title: 'Craft compelling messages that resonate with your audience',
