@@ -4,6 +4,7 @@ import { Poppins } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/context/auth-context"
 import { PostHogProvider } from "@/components/posthog-provider"
+import { Analytics } from "@vercel/analytics/next"
 
 const poppins = Poppins({ 
   subsets: ["latin"],
@@ -35,6 +36,7 @@ export default function RootLayout({
             {children}
           </PostHogProvider>
         </AuthProvider>
+        <Analytics />
       </body>
     </html>
   )

@@ -52,11 +52,11 @@ export function AnimatedHeading({ baseText, phrases, interval = 2000, typingSpee
   const maxWidth = Math.max(...phrases.map(phrase => phrase.length)) * 1.2 + 'ch'; // Approx char width
 
   return (
-    <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
+    <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight break-words">
       {baseText}
       <span
-        className="inline-block text-primary-pink"
-        style={{ minWidth: maxWidth }} // Ensure consistent width
+        className="inline-block text-primary-pink break-words"
+        style={{ minWidth: 'min(20ch, 90vw)' }} // Responsive width that prevents overflow
       >
         {displayedText}
       </span>
