@@ -37,8 +37,8 @@ export async function POST(request: NextRequest) {
     const trackerDescriptions: Record<string, string> = {
       'introduction': 'Professional greeting, introductions, and welcoming the patient to establish initial rapport',
       'rapport-building': 'Building personal connection, asking about comfort, experience, and making the patient feel at ease',
-      'listening-to-concerns': 'Actively listening to patient concerns, using mirrors or visual aids, understanding their goals and worries',
-      'facial-assessment': 'Conducting thorough facial and skin assessment, examining areas of concern, professional evaluation',
+      'listening-to-concerns': 'Patient expressing actual concerns, objections, fears, worries that need addressing',
+      'overall-assessment': 'Comprehensive evaluation of multiple areas, holistic approach, big-picture analysis',
       'treatment-plan': 'Developing and explaining customized treatment recommendations, procedure options, and approach',
       'pricing-questions': 'Transparent discussion of costs, pricing, payment options, and investment in treatment',
       'follow-up-booking': 'Scheduling next appointments, explaining next steps, and ensuring care continuity'

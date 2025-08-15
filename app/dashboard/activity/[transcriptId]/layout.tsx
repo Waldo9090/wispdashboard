@@ -745,7 +745,7 @@ export default function ActivityLayout({
                             className="w-full h-10"
                             preload="metadata"
                             style={{
-                              filter: 'sepia(20%) saturate(70%) hue-rotate(220deg) brightness(95%) contrast(105%)'
+                              filter: 'grayscale(40%) brightness(95%) contrast(100%)'
                             }}
                           >
                             <source src={transcriptData.audioURL} type="audio/m4a" />

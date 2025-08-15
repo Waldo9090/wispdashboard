@@ -255,7 +255,7 @@ export default function InsightsPage() {
       { id: "introduction", name: "Introduction" },
       { id: "rapport-building", name: "Rapport building" }, 
       { id: "listening-to-concerns", name: "Listening to patient concerns" },
-      { id: "facial-assessment", name: "Full facial assessment" },
+      { id: "overall-assessment", name: "Overall comprehensive assessment" },
       { id: "treatment-plan", name: "Developing a treatment plan" },
       { id: "pricing-questions", name: "Addressing pricing and questions" },
       { id: "follow-up-booking", name: "Follow-up, next steps, appointment booking" }
@@ -344,44 +344,44 @@ export default function InsightsPage() {
       {
         id: "introduction",
         name: "Introduction",
-        description: "Initial greeting and introductions",
-        keywords: ["hello", "hi", "good morning", "good afternoon", "my name is", "i'm", "introduction", "welcome", "meet"]
+        description: "Professional greeting, introductions, and welcoming the patient to establish initial rapport",
+        keywords: [] // Keywords no longer needed - using OpenAI
       },
       {
         id: "rapport-building",
         name: "Rapport building", 
-        description: "Building connection with patient",
-        keywords: ["how are you", "tell me about", "what brings you", "comfortable", "relax", "experience", "first time", "feeling"]
+        description: "Building personal connection, asking about comfort, experience, and making the patient feel at ease",
+        keywords: [] // Keywords no longer needed - using OpenAI
       },
       {
         id: "listening-to-concerns",
-        name: "Listening to patient concerns, handed a mirror",
-        description: "Understanding patient needs and concerns, using mirror",
-        keywords: ["concerns", "worried about", "looking for", "want to", "goal", "problem", "issue", "bothering", "mirror", "show you", "see yourself"]
+        name: "Listening to patient concerns",
+        description: "Patient expressing actual concerns, objections, fears, worries that need addressing",
+        keywords: [] // Keywords no longer needed - using OpenAI
       },
       {
-        id: "facial-assessment",
-        name: "Full facial assessment",
-        description: "Complete evaluation of patient's face and skin",
-        keywords: ["assessment", "examine", "look at", "skin", "facial", "analyze", "evaluate", "check", "notice", "see", "areas"]
+        id: "overall-assessment",
+        name: "Overall comprehensive assessment",
+        description: "Comprehensive evaluation of multiple areas, holistic approach, big-picture analysis",
+        keywords: [] // Keywords no longer needed - using OpenAI
       },
       {
         id: "treatment-plan",
         name: "Developing a treatment plan",
-        description: "Creating customized treatment recommendations",
-        keywords: ["treatment plan", "recommend", "suggest", "plan", "approach", "procedure", "treatment", "options", "best for you"]
+        description: "Developing and explaining customized treatment recommendations, procedure options, and approach",
+        keywords: [] // Keywords no longer needed - using OpenAI
       },
       {
         id: "pricing-questions",
-        name: "Addressing pricing and any other questions",
-        description: "Discussing costs and answering patient questions",
-        keywords: ["price", "cost", "investment", "budget", "payment", "insurance", "questions", "concerns", "affordable", "packages"]
+        name: "Addressing pricing and questions",
+        description: "Transparent discussion of costs, pricing, payment options, and investment in treatment",
+        keywords: [] // Keywords no longer needed - using OpenAI
       },
       {
         id: "follow-up-booking",
         name: "Follow-up, next steps, appointment booking",
-        description: "Scheduling follow-up appointments and next steps",
-        keywords: ["follow up", "next steps", "appointment", "schedule", "book", "return", "see you", "next visit", "come back", "weeks"]
+        description: "Scheduling next appointments, explaining next steps, and ensuring care continuity",
+        keywords: [] // Keywords no longer needed - using OpenAI
       }
     ]
 
@@ -416,205 +416,70 @@ export default function InsightsPage() {
     }
   }
 
-  // Helper function to extract specific matching phrases from text
-  const extractMatchingPhrases = (text: string, patterns: string[], trackerId: string): DetectedPhrase[] => {
-    const detectedPhrases: DetectedPhrase[] = []
-    const normalizedText = text.toLowerCase()
-    
-    // Split text into sentences for better phrase extraction
-    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 10)
-    
-    patterns.forEach(pattern => {
-      const normalizedPattern = pattern.toLowerCase()
-      
-      // Find sentences containing the pattern
-      sentences.forEach((sentence, index) => {
-        const normalizedSentence = sentence.toLowerCase()
-        if (normalizedSentence.includes(normalizedPattern)) {
-          // Clean up the sentence
-          let cleanSentence = sentence.trim()
-          
-          // Remove common filler words from start
-          cleanSentence = cleanSentence.replace(/^(and|but|so|well|okay|alright|um|uh)\s+/i, '')
-          
-          // Ensure sentence ends with punctuation
-          if (!/[.!?]$/.test(cleanSentence)) {
-            cleanSentence += '.'
-          }
-          
-          // Only add if it's a reasonable length and not duplicate
-          if (cleanSentence.length > 15 && cleanSentence.length < 200) {
-            const isDuplicate = detectedPhrases.some(p => 
-              p.phrase.toLowerCase() === cleanSentence.toLowerCase()
-            )
-            
-            if (!isDuplicate) {
-              detectedPhrases.push({
-                phrase: cleanSentence,
-                timestamp: "00:00", // Will be updated with actual timestamp
-                speaker: "Unknown", // Will be updated with actual speaker
-                confidence: 0.85 + Math.random() * 0.1, // 85-95% confidence
-                startTime: 0,
-                endTime: 0,
-                entryIndex: index,
-                matchedPattern: pattern
-              } as DetectedPhrase & { matchedPattern: string })
-            }
-          }
-        }
-      })
-    })
-    
-    // If no sentence-level matches, try extracting context around keywords
-    if (detectedPhrases.length === 0) {
-      patterns.forEach(pattern => {
-        const keywordIndex = normalizedText.indexOf(pattern.toLowerCase())
-        if (keywordIndex !== -1) {
-          // Extract 100 characters before and after the keyword
-          const contextStart = Math.max(0, keywordIndex - 100)
-          const contextEnd = Math.min(text.length, keywordIndex + pattern.length + 100)
-          
-          let extractedPhrase = text.substring(contextStart, contextEnd).trim()
-          
-          // Try to find sentence boundaries within the extracted context
-          const sentences = extractedPhrase.split(/[.!?]+/)
-          const relevantSentence = sentences.find(s => 
-            s.toLowerCase().includes(pattern.toLowerCase())
-          )
-          
-          if (relevantSentence && relevantSentence.trim().length > 15) {
-            let finalPhrase = relevantSentence.trim()
-            
-            // Clean up the phrase
-            finalPhrase = finalPhrase.replace(/^(and|but|so|well|okay|alright|um|uh)\s+/i, '')
-            
-            if (!/[.!?]$/.test(finalPhrase)) {
-              finalPhrase += '.'
-            }
-            
-            detectedPhrases.push({
-              phrase: finalPhrase,
-              timestamp: "00:00",
-              speaker: "Unknown",
-              confidence: 0.8,
-              startTime: 0,
-              endTime: 0,
-              entryIndex: 0,
-              matchedPattern: pattern
-            } as DetectedPhrase & { matchedPattern: string })
-          }
-        }
-      })
-    }
-    
-    return detectedPhrases
-  }
-
-
-  // Enhanced Analysis Function with Precise Phrase Extraction
-  const analyzeTranscriptWithPhraseCapture = async (
+  // OpenAI-powered phrase extraction for all trackers
+  const analyzeTranscriptWithOpenAI = async (
     speakerTranscript: any[],
-    trackers: Tracker[]
+    fullTranscript: string
   ): Promise<any[]> => {
     
+    console.log('🤖 Starting OpenAI-powered phrase extraction for ALL trackers...')
+    
     try {
-      const results = trackers.map(tracker => {
-        let allDetectedPhrases: DetectedPhrase[] = []
-        let found = false
-        let overallConfidence = 0
-        
-        // Define comprehensive pattern sets for each tracker
-        const getTrackerPatterns = (trackerId: string): string[] => {
-          const patterns: Record<string, string[]> = {
-            'introduction': [
-              'hello', 'hi there', 'good morning', 'good afternoon', 'my name is', 
-              'welcome', 'nice to meet you', "i'm", 'introduction', 'meet'
-            ],
-            'rapport-building': [
-              'how are you', 'how are you feeling', 'comfortable', 'first time', 
-              'experience', 'feeling', 'tell me about', 'what brings you', 'relax'
-            ],
-            'listening-to-concerns': [
-              'concerns', 'worried about', 'looking for', 'want to', 'goal', 
-              'bothering you', 'mirror', 'show you', 'see yourself', 'interested in'
-            ],
-            'facial-assessment': [
-              'look at', 'examine', 'assess', 'notice', 'skin', 'take photos', 
-              'pictures', 'facial', 'areas', 'see', 'analyze'
-            ],
-            'treatment-plan': [
-              'recommend', 'suggest', 'treatment plan', 'procedure', 'botox', 
-              'filler', 'units', 'dose', 'plan', 'approach'
-            ],
-            'pricing-questions': [
-              'cost', 'price', 'investment', 'budget', 'payment', 'dollars', 
-              '$', 'units additional', 'total', 'affordable'
-            ],
-            'follow-up-booking': [
-              'follow up', 'next steps', 'appointment', 'schedule', 'book', 
-              'see you', 'come back', 'return', 'next visit'
-            ]
-          }
-          
-          return patterns[trackerId] || tracker.keywords || []
+      console.log('🌐 Making single API call for all 7 trackers...')
+      
+      const response = await fetch('/api/extract-all-tracker-phrases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          transcriptText: fullTranscript,
+          speakerTranscript: speakerTranscript
+        })
+      })
+      
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`)
+      }
+      
+      const result = await response.json()
+      console.log('✅ Received results for all trackers')
+      console.log(`💰 Estimated cost: $${result.costEstimate?.toFixed(4) || 'unknown'}`)
+      
+      // Convert to the expected format
+      const trackerIds = [
+        'introduction', 'rapport-building', 'listening-to-concerns', 
+        'overall-assessment', 'treatment-plan', 'pricing-questions', 'follow-up-booking'
+      ]
+      
+      const formattedResults = trackerIds.map(trackerId => {
+        const trackerData = result.trackerResults[trackerId] || {
+          detectedPhrases: [],
+          found: false,
+          confidence: 0
         }
         
-        const trackerPatterns = getTrackerPatterns(tracker.id)
-        
-        // Analyze each speaker transcript entry
-        speakerTranscript.forEach((entry, entryIndex) => {
-          if (!entry.text) return
-          
-          // Extract specific matching phrases from this entry
-          const extractedPhrases = extractMatchingPhrases(entry.text, trackerPatterns, tracker.id)
-          
-          if (extractedPhrases.length > 0) {
-            found = true
-            
-            // Update phrases with correct metadata from the entry
-            const updatedPhrases = extractedPhrases.map(phrase => ({
-              ...phrase,
-              timestamp: entry.timestamp || "00:00",
-              speaker: entry.speaker || "Unknown",
-              startTime: entry.start || 0,
-              endTime: entry.end || 0,
-              entryIndex
-            }))
-            
-            allDetectedPhrases.push(...updatedPhrases)
-            overallConfidence = Math.max(overallConfidence, 85)
-          }
-        })
-        
-        // Remove duplicates and limit to top 5 phrases
-        const uniquePhrases = allDetectedPhrases
-          .filter((phrase, index, self) => 
-            self.findIndex(p => p.phrase.toLowerCase() === phrase.phrase.toLowerCase()) === index
-          )
-          .slice(0, 5)
-        
         return {
-          trackerId: tracker.id,
-          found,
-          confidence: Math.round(overallConfidence),
-          detectedPhrases: uniquePhrases,
-          evidence: found ? `Found ${uniquePhrases.length} specific phrase(s)` : "Not found"
+          trackerId: trackerId,
+          found: trackerData.found,
+          confidence: trackerData.confidence,
+          detectedPhrases: trackerData.detectedPhrases,
+          evidence: trackerData.evidence || 
+            (trackerData.found ? 
+              `AI extracted ${trackerData.detectedPhrases.length} phrase(s)` : 
+              "No relevant phrases detected by AI"),
+          extractionMethod: 'openai-batch'
         }
       })
       
-      return results
+      console.log('✅ OpenAI phrase extraction completed for all trackers')
+      return formattedResults
       
     } catch (error) {
-      console.error('Analysis failed:', error)
-      return trackers.map(t => ({
-        trackerId: t.id,
-        found: false,
-        confidence: 0,
-        detectedPhrases: [],
-        evidence: "Analysis failed"
-      }))
+      console.error('❌ OpenAI phrase extraction failed:', error)
+      throw error
     }
   }
+
+
 
   // Process all transcripts (initial button click)
   const processAllTranscripts = async () => {
@@ -627,27 +492,37 @@ export default function InsightsPage() {
     console.log('🔍 Starting comprehensive tracker analysis for ALL transcripts...')
     
     try {
-      // Use the 7 default trackers directly
+      // Use the 7 default trackers for OpenAI analysis (no keywords needed)
       const trackersToUse = [
-        { id: "introduction", name: "Introduction", keywords: ["hello", "hi", "good morning", "my name is", "welcome"] },
-        { id: "rapport-building", name: "Rapport building", keywords: ["how are you", "comfortable", "first time", "feeling"] },
-        { id: "listening-to-concerns", name: "Listening to patient concerns", keywords: ["concerns", "looking for", "want to", "mirror", "show you"] },
-        { id: "facial-assessment", name: "Full facial assessment", keywords: ["assessment", "examine", "skin", "facial", "notice"] },
-        { id: "treatment-plan", name: "Developing a treatment plan", keywords: ["recommend", "suggest", "plan", "treatment", "procedure"] },
-        { id: "pricing-questions", name: "Addressing pricing and questions", keywords: ["price", "cost", "investment", "budget", "questions"] },
-        { id: "follow-up-booking", name: "Follow-up, next steps, appointment booking", keywords: ["follow up", "next steps", "appointment", "schedule", "book"] }
+        { id: "introduction", name: "Introduction" },
+        { id: "rapport-building", name: "Rapport building" },
+        { id: "listening-to-concerns", name: "Listening to patient concerns" },
+        { id: "overall-assessment", name: "Overall comprehensive assessment" },
+        { id: "treatment-plan", name: "Developing a treatment plan" },
+        { id: "pricing-questions", name: "Addressing pricing and questions" },
+        { id: "follow-up-booking", name: "Follow-up, next steps, appointment booking" }
       ]
 
       let totalProcessed = 0
 
-      // Process each person's transcripts
+      // Collect all transcripts for parallel processing
+      const allTranscripts: Array<{
+        person: typeof person,
+        transcriptDoc: any,
+        transcriptData: any,
+        transcriptId: string,
+        speakerTranscript: any[]
+      }> = []
+
+      console.log('📋 Collecting all transcripts for parallel processing...')
+      
       for (const person of people) {
-        console.log(`📊 Processing transcripts for ${person.name} (${person.id})`)
+        console.log(`📊 Collecting transcripts for ${person.name} (${person.id})`)
         
         const timestampsRef = collection(db, 'transcript', person.id, 'timestamps')
         const timestampsSnap = await getDocs(timestampsRef)
 
-        // Process each transcript document
+        // Collect transcript documents
         for (const transcriptDoc of timestampsSnap.docs) {
           const transcriptData = transcriptDoc.data()
           const transcriptId = transcriptDoc.id
@@ -668,64 +543,154 @@ export default function InsightsPage() {
             console.log(`  📝 New transcript ${transcriptId} will be processed`)
           }
 
-          console.log(`  🔍 Analyzing NEW transcript ${transcriptId}`)
+          allTranscripts.push({
+            person,
+            transcriptDoc,
+            transcriptData,
+            transcriptId,
+            speakerTranscript
+          })
+        }
+      }
 
-          // Analyze with all 7 trackers
-          const analysisResults = await analyzeTranscriptWithPhraseCapture(speakerTranscript, trackersToUse)
-          
-          // Build tracker analysis object
-          const trackerAnalysis: any = {}
-          const trackerScoring: any = {}
-          
-          // Process each tracker without OpenAI classification
-          for (const result of analysisResults) {
-            trackerAnalysis[result.trackerId] = {
-              found: result.found,
-              confidence: result.confidence / 100, // Convert to 0-1 scale
-              detectedPhrases: result.detectedPhrases || []
-            }
+      // Process transcripts in parallel batches of 15 (optimized for speed)
+      const BATCH_SIZE = 15
+      
+      console.log(`🚀 Found ${allTranscripts.length} transcripts to process in optimized parallel batches of ${BATCH_SIZE}`)
+      let totalCost = 0
+      let totalAPIRequests = 0
+      const startTime = Date.now()
+      
+      for (let i = 0; i < allTranscripts.length; i += BATCH_SIZE) {
+        const batch = allTranscripts.slice(i, i + BATCH_SIZE)
+        const batchNumber = Math.floor(i / BATCH_SIZE) + 1
+        const totalBatches = Math.ceil(allTranscripts.length / BATCH_SIZE)
+        
+        console.log(`📦 Processing batch ${batchNumber}/${totalBatches} (${batch.length} transcripts in parallel)`)
+
+        // Process all transcripts in this batch in parallel
+        const batchPromises = batch.map(async (item) => {
+          console.log(`  🔍 Analyzing transcript ${item.transcriptId} for ${item.person.name}`)
+
+          try {
+            // Track API request
+            totalAPIRequests++
+            const requestStartTime = Date.now()
             
-            // Simple classification based on detected phrases
-            let category = 'Missed'
-            if (result.detectedPhrases && result.detectedPhrases.length > 0) {
-              if (result.detectedPhrases.length >= 3) {
-                category = 'Strong Execution'
-              } else {
-                category = 'Needs Improvement'
+            // Analyze with OpenAI-powered phrase extraction for ALL 7 trackers
+            const analysisResults = await analyzeTranscriptWithOpenAI(
+              item.speakerTranscript, 
+              item.transcriptData.transcript
+            )
+            
+            const requestDuration = Date.now() - requestStartTime
+            console.log(`  ⏱️ API request took ${requestDuration}ms for ${item.transcriptId}`)
+            
+            // Build tracker analysis object
+            const trackerAnalysis: any = {}
+            const trackerScoring: any = {}
+            
+            // Process each tracker without OpenAI classification
+            for (const result of analysisResults) {
+              // Remove reasoning field - only keep essential data
+              const cleanDetectedPhrases = (result.detectedPhrases || []).map((phrase: any) => ({
+                phrase: phrase.phrase,
+                speaker: phrase.speaker,
+                confidence: phrase.confidence,
+                timestamp: phrase.timestamp,
+                startTime: phrase.startTime,
+                endTime: phrase.endTime,
+                entryIndex: phrase.entryIndex
+                // Removed: reasoning field
+              }))
+
+              trackerAnalysis[result.trackerId] = {
+                found: result.found,
+                confidence: result.confidence / 100, // Convert to 0-1 scale
+                detectedPhrases: cleanDetectedPhrases
+              }
+              
+              // Simple classification based on detected phrases
+              let category = 'Missed'
+              if (cleanDetectedPhrases.length > 0) {
+                if (cleanDetectedPhrases.length >= 3) {
+                  category = 'Strong Execution'
+                } else {
+                  category = 'Needs Improvement'
+                }
+              }
+              
+              trackerScoring[result.trackerId] = {
+                category: category,
+                detectedPhrases: cleanDetectedPhrases,
+                phraseCount: cleanDetectedPhrases.length
               }
             }
-            
-            trackerScoring[result.trackerId] = {
-              category: category,
-              detectedPhrases: result.detectedPhrases || [],
-              phraseCount: (result.detectedPhrases || []).length
-            }
-          }
 
-          // Store tracker analysis in correct insights collection structure
-          try {
+            // Store tracker analysis in correct insights collection structure
             const insightDoc = {
-              personId: person.id,
-              personName: person.name,
-              transcriptId: transcriptId,
-              transcriptPath: `/transcript/${person.id}/timestamps/${transcriptId}`,
-              speakerTranscript: speakerTranscript, // Save the speaker transcript data
+              personId: item.person.id,
+              personName: item.person.name,
+              transcriptId: item.transcriptId,
+              transcriptPath: `/transcript/${item.person.id}/timestamps/${item.transcriptId}`,
+              speakerTranscript: item.speakerTranscript,
               trackerAnalysis: trackerAnalysis,
-              trackerScoring: trackerScoring, // Add the 1-5 scoring system
+              trackerScoring: trackerScoring,
               calculatedAt: new Date(),
-              analysisMethod: 'phrase-capture-enhanced-with-scoring'
+              analysisMethod: 'openai-parallel-batch-processing'
             }
 
             // Save to: /insights/{personId}/timestamps/{transcriptId}
-            const insightRef = doc(db, 'insights', person.id, 'timestamps', transcriptId)
+            const insightRef = doc(db, 'insights', item.person.id, 'timestamps', item.transcriptId)
             await setDoc(insightRef, insightDoc)
-            totalProcessed++
             
-            console.log(`    ✅ Stored tracker analysis at insights/${person.id}/timestamps/${transcriptId}`)
+            console.log(`    ✅ Completed ${item.transcriptId} for ${item.person.name}`)
+            
+            // Estimate cost for this transcript (rough estimate)
+            const estimatedCost = item.transcriptData.transcript.length * 0.000001 // Very rough estimate
+            totalCost += estimatedCost
+            
+            return { 
+              success: true, 
+              transcriptId: item.transcriptId, 
+              personName: item.person.name,
+              processingTime: requestDuration,
+              estimatedCost
+            }
             
           } catch (error) {
-            console.warn(`    ❌ Failed to store insight for transcript ${transcriptId}:`, error)
+            console.error(`    ❌ Failed to process ${item.transcriptId} for ${item.person.name}:`, error)
+            return { success: false, transcriptId: item.transcriptId, personName: item.person.name, error }
           }
+        })
+
+        // Wait for all transcripts in this batch to complete
+        const batchResults = await Promise.allSettled(batchPromises)
+        
+        // Count successful completions
+        const successful = batchResults.filter(result => 
+          result.status === 'fulfilled' && result.value.success
+        ).length
+        
+        totalProcessed += successful
+        
+        // Calculate batch metrics
+        const batchCost = batchResults
+          .filter(result => result.status === 'fulfilled' && result.value.success)
+          .reduce((sum, result: any) => sum + (result.value.estimatedCost || 0), 0)
+          
+        const avgProcessingTime = batchResults
+          .filter(result => result.status === 'fulfilled' && result.value.success)
+          .reduce((sum, result: any) => sum + (result.value.processingTime || 0), 0) / successful
+        
+        console.log(`✅ Batch ${batchNumber} completed: ${successful}/${batch.length} successful`)
+        console.log(`💰 Batch cost estimate: $${batchCost.toFixed(4)}`)
+        console.log(`⏱️ Average processing time: ${Math.round(avgProcessingTime)}ms`)
+        
+        // Reduced rate limiting for faster processing
+        if (i + BATCH_SIZE < allTranscripts.length) {
+          console.log('⏳ Waiting 500ms before next batch...')
+          await new Promise(resolve => setTimeout(resolve, 500))
         }
       }
 
@@ -733,8 +698,23 @@ export default function InsightsPage() {
       await loadExistingInsights()
       setHasProcessedBefore(true)
       
+      // Final performance metrics
+      const totalDuration = Date.now() - startTime
+      const avgTimePerTranscript = totalDuration / totalProcessed
+      
       console.log(`✅ Processing completed! Analyzed ${totalProcessed} new transcripts`)
-      alert(`Processing completed! Analyzed ${totalProcessed} transcripts`)
+      console.log(`💰 Total estimated cost: $${totalCost.toFixed(4)}`)
+      console.log(`📊 Total API requests: ${totalAPIRequests}`)
+      console.log(`⏱️ Total processing time: ${Math.round(totalDuration / 1000)}s`)
+      console.log(`⚡ Average time per transcript: ${Math.round(avgTimePerTranscript)}ms`)
+      console.log(`🚀 API calls per transcript: 1 (optimized from 7)`)
+      
+      alert(`Processing completed! 
+✅ Analyzed ${totalProcessed} transcripts
+💰 Estimated cost: $${totalCost.toFixed(4)}
+⏱️ Total time: ${Math.round(totalDuration / 1000)}s
+🚀 Speed: ${Math.round(avgTimePerTranscript)}ms per transcript
+📊 API efficiency: 1 call per transcript (7x improvement)`)
       
     } catch (error) {
       console.error('❌ Error in tracker analysis:', error)
@@ -760,7 +740,7 @@ export default function InsightsPage() {
       { id: "introduction", name: "Introduction" },
       { id: "rapport-building", name: "Rapport building" }, 
       { id: "listening-to-concerns", name: "Listening to patient concerns" },
-      { id: "facial-assessment", name: "Full facial assessment" },
+      { id: "overall-assessment", name: "Overall comprehensive assessment" },
       { id: "treatment-plan", name: "Developing a treatment plan" },
       { id: "pricing-questions", name: "Addressing pricing and questions" },
       { id: "follow-up-booking", name: "Follow-up, next steps, appointment booking" }
@@ -824,6 +804,7 @@ export default function InsightsPage() {
     if (percentage >= 40) return 'bg-orange-100 text-orange-800'
     return 'bg-red-100 text-red-800'
   }
+
 
   if (loading) {
     return (
@@ -947,7 +928,7 @@ export default function InsightsPage() {
             <div className="p-4 border-l border-gray-200">
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                <span className="text-xs font-medium text-gray-900">Facial Assessment</span>
+                <span className="text-xs font-medium text-gray-900">Overall Assessment</span>
               </div>
             </div>
             
@@ -1001,7 +982,7 @@ export default function InsightsPage() {
                 </div>
                 
                 {/* Fixed 7 tracker columns */}
-                {['introduction', 'rapport-building', 'listening-to-concerns', 'facial-assessment', 'treatment-plan', 'pricing-questions', 'follow-up-booking'].map(trackerId => {
+                {['introduction', 'rapport-building', 'listening-to-concerns', 'overall-assessment', 'treatment-plan', 'pricing-questions', 'follow-up-booking'].map(trackerId => {
                   const insight = getInsightForPersonAndTracker(person.id, trackerId)
                   const percentage = insight?.percentage || 0
                   

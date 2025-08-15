@@ -68,7 +68,7 @@ return (
         />
         <div className="absolute inset-0 bg-black opacity-50 z-0"></div> {/* Overlay for readability */}
         <div className="container relative z-10 grid lg:grid-cols-2 gap-12 items-center px-4 md:px-8 lg:px-12 text-text-dark-primary">
-          <div className="space-y-6 max-w-full overflow-hidden">
+          <div className="space-y-6">
             <div className="inline-flex items-center rounded-full bg-gray-800 px-3 py-2 text-xs font-medium text-white space-x-2">
               <Image src="/yclogothing.svg" width={16} height={16} alt="Y Combinator Logo" className="h-4 w-4 object-contain" />
               <span>Backed by Y Combinator</span>
@@ -79,7 +79,7 @@ return (
                 "  finds your perfect leads",
                 "  books your prospects",
                 "  trains your sales reps",
-                "  finds upsell opportunities",
+                "  finds upsell points",
               ]}
               interval={2000} // Time after phrase is fully typed before next one starts
               typingSpeed={75} // Speed of typing each character
@@ -98,8 +98,8 @@ return (
       {/* Section: The outbound partner built for hard-to-crack markets. */}
       <section className="py-16 md:py-24 lg:py-32 bg-custom-dark-bg text-text-dark-primary">
         <div className="container grid lg:grid-cols-2 gap-12 items-center px-4 md:px-8 lg:px-12">
-          <div className="space-y-6 max-w-full overflow-hidden">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight break-words">
+          <div className="space-y-6">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
             The AI sales layer built for markets where outbound breaks down.
 
             </h2>
@@ -139,7 +139,7 @@ return (
       {/* Section: How it Works */}
       <section className="py-16 md:py-24 lg:py-32 bg-custom-dark-bg text-text-dark-primary">
         <div className="container px-4 md:px-8 lg:px-12 text-center">
-          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-12 break-words">
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-12">
             How it Works
           </h2>
           <div className="grid md:grid-cols-3 gap-8">
