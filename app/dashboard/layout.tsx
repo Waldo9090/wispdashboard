@@ -1,11 +1,14 @@
 "use client"
 
 import { usePathname, useRouter } from "next/navigation"
-import { Home, MessageSquare, Link as LinkIcon, Settings, Bot, X, GripVertical, Sparkles, FileText, CheckSquare, BarChart3, Workflow, ActivitySquare } from "lucide-react"
+import { Home, MessageSquare, Link as LinkIcon, Settings, Bot, X, GripVertical, Sparkles, FileText, CheckSquare, BarChart3, Workflow, ActivitySquare, UserPlus } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { useTheme } from "next-themes"
 import { useAuth } from "@/context/auth-context"
+import { useState } from "react"
+import { InviteUsersModal } from "@/components/InviteUsersModal"
+import { Button } from "@/components/ui/button"
 
 const sidebarItems = [
   { icon: ActivitySquare, label: "Activity", href: "/dashboard/activity" as const },
@@ -23,6 +26,7 @@ export default function DashboardLayout({
   const router = useRouter()
   const { theme, setTheme } = useTheme()
   const { user } = useAuth()
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
 
   return (
     <div className="min-h-screen bg-background font-sans">
@@ -64,6 +68,18 @@ export default function DashboardLayout({
           </div>
         </nav>
 
+        <div className="p-4 space-y-3">
+          <Button
+            onClick={() => setIsInviteModalOpen(true)}
+            variant="outline"
+            size="sm"
+            className="w-full flex items-center space-x-2"
+          >
+            <UserPlus className="h-4 w-4" />
+            <span>Add</span>
+          </Button>
+        </div>
+        
         <div className="p-4 border-t border-border">
           <div 
             className="w-full flex items-center justify-start text-muted-foreground text-sm cursor-pointer hover:text-foreground transition-colors"
@@ -78,6 +94,12 @@ export default function DashboardLayout({
       <div className="ml-64 flex-1 flex flex-col">
         {children}
       </div>
+
+      {/* Invite Users Modal */}
+      <InviteUsersModal
+        isOpen={isInviteModalOpen}
+        onClose={() => setIsInviteModalOpen(false)}
+      />
     </div>
   )
 }

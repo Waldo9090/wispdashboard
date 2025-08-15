@@ -5,6 +5,7 @@ import "./globals.css"
 import { AuthProvider } from "@/context/auth-context"
 import { PostHogProvider } from "@/components/posthog-provider"
 import { Analytics } from "@vercel/analytics/next"
+import { Toaster } from "@/components/ui/sonner"
 
 const poppins = Poppins({ 
   subsets: ["latin"],
@@ -37,6 +38,7 @@ export default function RootLayout({
           </PostHogProvider>
         </AuthProvider>
         <Analytics />
+        <Toaster />
       </body>
     </html>
   )
