@@ -4,8 +4,9 @@ import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Plus, MoreVertical, User, Target } from "lucide-react"
 import { useAuth } from "@/context/auth-context"
-import { db } from "@/lib/firebase"
+import { db, functions } from "@/lib/firebase"
 import { getUserDisplayName, isUserDataEncrypted } from "@/lib/decryption-utils"
+import { httpsCallable } from "firebase/functions"
 import { 
   collection, 
   getDocs, 
@@ -558,26 +559,17 @@ export default function InsightsPage() {
           try {
             const requestStartTime = Date.now()
             
-            // Call the same API used by individual activity pages
-            const response = await fetch('/api/process-transcript-insights', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                transcriptId: item.transcriptId,
-                personId: item.personId
-              })
+            // Call the Cloud Function instead of API route
+            if (!functions) {
+              throw new Error('Firebase Functions not available')
+            }
+            const processTranscriptInsights = httpsCallable(functions, 'processTranscriptInsights')
+            const result = await processTranscriptInsights({
+              transcriptId: item.transcriptId,
+              personId: item.personId
             })
             
             const requestDuration = Date.now() - requestStartTime
-            
-            if (!response.ok) {
-              const errorText = await response.text()
-              throw new Error(`API error ${response.status}: ${errorText}`)
-            }
-
-            const result = await response.json()
             console.log(`    ✅ Completed ${item.transcriptId} for ${item.personName} (${requestDuration}ms)`)
             
             return { 
@@ -585,7 +577,7 @@ export default function InsightsPage() {
               transcriptId: item.transcriptId, 
               personName: item.personName,
               processingTime: requestDuration,
-              result: result
+              result: result.data
             }
             
           } catch (error) {

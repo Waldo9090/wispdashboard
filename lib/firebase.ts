@@ -3,6 +3,7 @@ import { initializeApp, getApp, FirebaseApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, setPersistence, browserLocalPersistence, Auth } from "firebase/auth";
 import { getFirestore, Firestore } from "firebase/firestore";
 import { getStorage, FirebaseStorage } from "firebase/storage";
+import { getFunctions, Functions, connectFunctionsEmulator, httpsCallable } from "firebase/functions";
 
 // Initialize Firebase configuration
 const firebaseConfig = {
@@ -48,6 +49,18 @@ export const db = getFirestore(app);
 // Initialize and export Storage
 export const storage = getStorage(app);
 
+// Initialize and export Functions (client-side only)
+export const functions = isClient ? getFunctions(app) : null;
+
+// Connect to Functions emulator in development
+if (isClient && process.env.NODE_ENV === 'development' && functions) {
+  try {
+    connectFunctionsEmulator(functions, 'localhost', 5001);
+  } catch (error) {
+    // Already connected or error connecting
+  }
+}
+
 // Analytics removed - no longer needed
 
 // For backward compatibility
@@ -61,6 +74,10 @@ export function getFirebaseDb(): Firestore {
 
 export function getFirebaseStorage(): FirebaseStorage {
   return storage;
+}
+
+export function getFirebaseFunctions(): Functions | null {
+  return functions;
 }
 
 // Analytics functions removed - no longer needed

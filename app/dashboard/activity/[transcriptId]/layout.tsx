@@ -8,8 +8,9 @@ import { useTheme } from "next-themes"
 import Image from "next/image"
 import { useAuth } from "@/context/auth-context"
 import { doc, getDoc, collection, getDocs } from "firebase/firestore"
-import { db } from "@/lib/firebase"
+import { db, functions } from "@/lib/firebase"
 import { getUserDisplayName, isUserDataEncrypted } from "@/lib/decryption-utils"
+import { httpsCallable } from "firebase/functions"
 import { Button } from "@/components/ui/button"
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable"
 
@@ -54,6 +55,7 @@ export default function ActivityLayout({
   const [loadingInsights, setLoadingInsights] = useState(false)
   const [foundPersonId, setFoundPersonId] = useState<string | null>(null)
   const [processingInsights, setProcessingInsights] = useState(false)
+  const [processingTimedOut, setProcessingTimedOut] = useState(false)
   const [selectedTracker, setSelectedTracker] = useState<string | null>(null)
 
   // Load current user status to filter sidebar items
@@ -417,43 +419,49 @@ export default function ActivityLayout({
 
     try {
       setProcessingInsights(true)
+      setProcessingTimedOut(false)
       console.log('🔄 Processing insights for transcript:', resolvedParams.transcriptId)
       console.log('📋 Using Person ID:', foundPersonId)
 
-      // Call the process-transcript-insights API which handles everything
-      const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'
-      const response = await fetch(`${baseUrl}/api/process-transcript-insights`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          transcriptId: resolvedParams.transcriptId,
-          personId: foundPersonId
-        })
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('❌ API Error:', errorText)
-        throw new Error(`Failed to process insights: ${response.status}`)
+      // Call the Cloud Function instead of API route
+      if (!functions) {
+        throw new Error('Firebase Functions not available')
       }
-
-      const result = await response.json()
+      const processTranscriptInsights = httpsCallable(functions, 'processTranscriptInsights')
+      const result = await processTranscriptInsights({
+        transcriptId: resolvedParams.transcriptId,
+        personId: foundPersonId
+      })
       console.log('✅ Insights processed successfully:', result)
 
-      // Set the insights data directly from the API response
-      if (result.insightsData) {
-        setInsightsData(result.insightsData)
+      // Set the insights data directly from the Cloud Function response
+      if (result.data.insightsData) {
+        setInsightsData(result.data.insightsData)
         console.log('📊 Insights data loaded:', {
-          trackerByPhrasesCount: result.insightsData.trackerByPhrases?.length || 0,
-          trackersFound: Object.keys(result.insightsData.trackerAnalysis || {}).length
+          trackerByPhrasesCount: result.data.insightsData.trackerByPhrases?.length || 0,
+          trackersFound: Object.keys(result.data.insightsData.trackerAnalysis || {}).length
         })
       }
 
     } catch (error) {
       console.error('❌ Error processing insights:', error)
-      alert('Failed to process insights. Please try again.')
+      
+      // Check if this is a timeout/network error vs actual processing error
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      const isTimeout = errorMessage.includes('timeout') || 
+                       errorMessage.includes('network') || 
+                       errorMessage.includes('fetch') ||
+                       errorMessage.includes('CONNECTION_REFUSED') ||
+                       error instanceof TypeError
+      
+      if (isTimeout) {
+        console.log('⚠️ Processing may still be running in the background. Check back in a few minutes.')
+        setProcessingTimedOut(true)
+        // Don't show error alert for timeouts - the processing might still succeed
+      } else {
+        // Only show error for actual processing failures
+        alert('Failed to process insights. Please try again.')
+      }
     } finally {
       setProcessingInsights(false)
     }
@@ -645,24 +653,70 @@ export default function ActivityLayout({
                       {(!insightsData || !insightsData.trackerByPhrases || insightsData.trackerByPhrases.length === 0) && !loadingInsights ? (
                         <div className="text-center py-8">
                           <Target className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                            Process this transcript to analyze conversation tracking and highlight key phrases.
-                          </p>
-                          {foundPersonId && transcriptData && (
-                            <Button
-                              onClick={processInsights}
-                              disabled={processingInsights}
-                              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium"
-                            >
-                              {processingInsights ? (
-                                <div className="flex items-center gap-2">
-                                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                  Processing...
+                          
+                          {processingTimedOut ? (
+                            <>
+                              <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg p-4 mb-4">
+                                <div className="flex items-center justify-center mb-2">
+                                  <Clock className="w-5 h-5 text-orange-600 dark:text-orange-400 mr-2" />
+                                  <h3 className="text-sm font-medium text-orange-800 dark:text-orange-300">Processing in Progress</h3>
                                 </div>
-                              ) : (
-                                'Process Transcript'
+                                <p className="text-sm text-orange-700 dark:text-orange-400 mb-3">
+                                  Your transcript is still being analyzed in the background. This may take 5-10 minutes for longer conversations.
+                                </p>
+                                <p className="text-xs text-orange-600 dark:text-orange-500">
+                                  Refresh this page in a few minutes to see the results, or click "Check Status" below.
+                                </p>
+                              </div>
+                              
+                              {foundPersonId && transcriptData && (
+                                <div className="flex gap-3 justify-center">
+                                  <Button
+                                    onClick={() => {
+                                      setProcessingTimedOut(false)
+                                      window.location.reload()
+                                    }}
+                                    variant="outline"
+                                    size="sm"
+                                  >
+                                    Refresh Page
+                                  </Button>
+                                  <Button
+                                    onClick={() => {
+                                      setProcessingTimedOut(false)
+                                      processInsights()
+                                    }}
+                                    disabled={processingInsights}
+                                    variant="outline"
+                                    size="sm"
+                                  >
+                                    Check Status
+                                  </Button>
+                                </div>
                               )}
-                            </Button>
+                            </>
+                          ) : (
+                            <>
+                              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                                Process this transcript to analyze conversation tracking and highlight key phrases.
+                              </p>
+                              {foundPersonId && transcriptData && (
+                                <Button
+                                  onClick={processInsights}
+                                  disabled={processingInsights}
+                                  className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium"
+                                >
+                                  {processingInsights ? (
+                                    <div className="flex items-center gap-2">
+                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                      Processing...
+                                    </div>
+                                  ) : (
+                                    'Process Transcript'
+                                  )}
+                                </Button>
+                              )}
+                            </>
                           )}
                         </div>
                       ) : loadingInsights ? (
