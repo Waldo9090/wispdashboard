@@ -724,34 +724,53 @@ export default function Dashboard() {
                 name: userName
               })
             } else if (transcriptData.encryptedUserData && isUserDataEncrypted(transcriptData.encryptedUserData)) {
-              // If userDisplayNames is not populated yet, try to decrypt on-demand
+              // Try decryption with multiple credential approaches
               try {
                 console.log(`🔍 [USER-FILTER] Attempting on-demand decryption for ${documentId}`)
-                const decryptedName = await Promise.race([
-                  getUserDisplayName(fallbackEmail, transcriptData.encryptedUserData),
-                  new Promise<string>((_, reject) => 
-                    setTimeout(() => reject(new Error('On-demand decryption timeout')), 3000)
-                  )
-                ]).catch(() => {
-                  console.warn(`⚠️ [USER-FILTER] On-demand decryption failed for ${documentId}, EXCLUDING from filter`)
-                  return null // Return null to indicate failure
-                })
                 
-                if (decryptedName && decryptedName !== fallbackEmail && !decryptedName.includes('@device.local')) {
+                // Try multiple credential formats to find the right one
+                const credentialsToTry = [
+                  fallbackEmail, // Original approach (device.local format)
+                  documentId, // Full document ID
+                  documentId.substring(0, 8), // First 8 chars of document ID
+                  documentId.substring(0, 12), // First 12 chars of document ID
+                ]
+                
+                let decryptedName = null
+                
+                for (const credential of credentialsToTry) {
+                  try {
+                    const result = await Promise.race([
+                      getUserDisplayName(credential, transcriptData.encryptedUserData),
+                      new Promise<string>((_, reject) => 
+                        setTimeout(() => reject(new Error('Decryption timeout')), 2000) // Shorter timeout per attempt
+                      )
+                    ])
+                    
+                    if (result && result !== credential && result !== 'Unknown User' && result.trim() !== '' && !result.includes('@device.local')) {
+                      decryptedName = result
+                      console.log(`✅ [USER-FILTER] Decryption succeeded with credential: ${credential} → ${result}`)
+                      break // Stop trying once we find a working credential
+                    }
+                  } catch (credentialError) {
+                    // Continue to next credential
+                    continue
+                  }
+                }
+                
+                if (decryptedName) {
                   userName = decryptedName
                   console.log(`✅ [USER-FILTER] On-demand decrypted name for ${documentId}: ${userName}`)
                   
-                  // Only add if successfully decrypted
                   users.push({
                     id: documentId,
                     name: userName
                   })
                 } else {
-                  console.log(`❌ [USER-FILTER] Failed to decrypt ${documentId}, EXCLUDING from user filter`)
+                  console.log(`❌ [USER-FILTER] Failed to decrypt ${documentId} with any credential, EXCLUDING from user filter`)
                 }
               } catch (error) {
                 console.error(`❌ [USER-FILTER] Error in on-demand decryption for ${documentId}:`, error)
-                console.log(`❌ [USER-FILTER] EXCLUDING ${documentId} from user filter due to decryption error`)
               }
             } else if (transcriptData.userEmail && !transcriptData.userEmail.includes('@device.local')) {
               // Only use real email addresses, not device.local fallbacks
@@ -844,20 +863,39 @@ export default function Dashboard() {
                   name: userName
                 })
               } else if (transcriptData.encryptedUserData && isUserDataEncrypted(transcriptData.encryptedUserData)) {
-                // If userDisplayNames is not populated yet, try to decrypt on-demand
+                // Try decryption with multiple credential approaches
                 try {
                   console.log(`🔍 [USER-FILTER-LEGACY] Attempting on-demand decryption for ${documentId}`)
-                  const decryptedName = await Promise.race([
-                    getUserDisplayName(fallbackEmail, transcriptData.encryptedUserData),
-                    new Promise<string>((_, reject) => 
-                      setTimeout(() => reject(new Error('On-demand decryption timeout')), 3000)
-                    )
-                  ]).catch(() => {
-                    console.warn(`⚠️ [USER-FILTER-LEGACY] On-demand decryption failed for ${documentId}, EXCLUDING from filter`)
-                    return null
-                  })
                   
-                  if (decryptedName && decryptedName !== fallbackEmail && !decryptedName.includes('@device.local')) {
+                  const credentialsToTry = [
+                    fallbackEmail, // Original approach (device.local format)
+                    documentId, // Full document ID
+                    documentId.substring(0, 8), // First 8 chars of document ID
+                    documentId.substring(0, 12), // First 12 chars of document ID
+                  ]
+                  
+                  let decryptedName = null
+                  
+                  for (const credential of credentialsToTry) {
+                    try {
+                      const result = await Promise.race([
+                        getUserDisplayName(credential, transcriptData.encryptedUserData),
+                        new Promise<string>((_, reject) => 
+                          setTimeout(() => reject(new Error('Decryption timeout')), 2000)
+                        )
+                      ])
+                      
+                      if (result && result !== credential && result !== 'Unknown User' && result.trim() !== '' && !result.includes('@device.local')) {
+                        decryptedName = result
+                        console.log(`✅ [USER-FILTER-LEGACY] Decryption succeeded with credential: ${credential} → ${result}`)
+                        break
+                      }
+                    } catch (credentialError) {
+                      continue
+                    }
+                  }
+                  
+                  if (decryptedName) {
                     userName = decryptedName
                     console.log(`✅ [USER-FILTER-LEGACY] On-demand decrypted name for ${documentId}: ${userName}`)
                     
@@ -866,11 +904,10 @@ export default function Dashboard() {
                       name: userName
                     })
                   } else {
-                    console.log(`❌ [USER-FILTER-LEGACY] Failed to decrypt ${documentId}, EXCLUDING from user filter`)
+                    console.log(`❌ [USER-FILTER-LEGACY] Failed to decrypt ${documentId} with any credential, EXCLUDING from user filter`)
                   }
                 } catch (error) {
                   console.error(`❌ [USER-FILTER-LEGACY] Error in on-demand decryption for ${documentId}:`, error)
-                  console.log(`❌ [USER-FILTER-LEGACY] EXCLUDING ${documentId} from user filter due to decryption error`)
                 }
               } else if (transcriptData.userEmail && !transcriptData.userEmail.includes('@device.local')) {
                 // Only use real email addresses, not device.local fallbacks
@@ -934,20 +971,39 @@ export default function Dashboard() {
               name: userName
             })
           } else if (transcriptData.encryptedUserData && isUserDataEncrypted(transcriptData.encryptedUserData)) {
-            // If userDisplayNames is not populated yet, try to decrypt on-demand
+            // Try decryption with multiple credential approaches
             try {
               console.log(`🔍 [USER-FILTER-ROOT] Attempting on-demand decryption for ${deviceId}`)
-              const decryptedName = await Promise.race([
-                getUserDisplayName(fallbackEmail, transcriptData.encryptedUserData),
-                new Promise<string>((_, reject) => 
-                  setTimeout(() => reject(new Error('On-demand decryption timeout')), 3000)
-                )
-              ]).catch(() => {
-                console.warn(`⚠️ [USER-FILTER-ROOT] On-demand decryption failed for ${deviceId}, EXCLUDING from filter`)
-                return null
-              })
               
-              if (decryptedName && decryptedName !== fallbackEmail && !decryptedName.includes('@device.local')) {
+              const credentialsToTry = [
+                fallbackEmail, // Original approach (device.local format)
+                deviceId, // Full device ID
+                deviceId.substring(0, 8), // First 8 chars of device ID
+                deviceId.substring(0, 12), // First 12 chars of device ID
+              ]
+              
+              let decryptedName = null
+              
+              for (const credential of credentialsToTry) {
+                try {
+                  const result = await Promise.race([
+                    getUserDisplayName(credential, transcriptData.encryptedUserData),
+                    new Promise<string>((_, reject) => 
+                      setTimeout(() => reject(new Error('Decryption timeout')), 2000)
+                    )
+                  ])
+                  
+                  if (result && result !== credential && result !== 'Unknown User' && result.trim() !== '' && !result.includes('@device.local')) {
+                    decryptedName = result
+                    console.log(`✅ [USER-FILTER-ROOT] Decryption succeeded with credential: ${credential} → ${result}`)
+                    break
+                  }
+                } catch (credentialError) {
+                  continue
+                }
+              }
+              
+              if (decryptedName) {
                 userName = decryptedName
                 console.log(`✅ [USER-FILTER-ROOT] On-demand decrypted name for ${deviceId}: ${userName}`)
                 
@@ -956,11 +1012,10 @@ export default function Dashboard() {
                   name: userName
                 })
               } else {
-                console.log(`❌ [USER-FILTER-ROOT] Failed to decrypt ${deviceId}, EXCLUDING from user filter`)
+                console.log(`❌ [USER-FILTER-ROOT] Failed to decrypt ${deviceId} with any credential, EXCLUDING from user filter`)
               }
             } catch (error) {
               console.error(`❌ [USER-FILTER-ROOT] Error in on-demand decryption for ${deviceId}:`, error)
-              console.log(`❌ [USER-FILTER-ROOT] EXCLUDING ${deviceId} from user filter due to decryption error`)
             }
           } else if (transcriptData.userEmail && !transcriptData.userEmail.includes('@device.local')) {
             // Only use real email addresses, not device.local fallbacks

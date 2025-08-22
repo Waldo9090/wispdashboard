@@ -9,7 +9,12 @@ admin.initializeApp()
  * Cloud Function that triggers when a transcript document is updated
  * Automatically processes the transcript for insights when transcription completes
  */
-export const processTranscriptOnUpdate = functions.firestore
+export const processTranscriptOnUpdate = functions
+  .runWith({
+    timeoutSeconds: 540,
+    memory: '2GB'
+  })
+  .firestore
   .document('transcript/{personId}/timestamps/{transcriptId}')
   .onUpdate(async (change, context) => {
     const { personId, transcriptId } = context.params
@@ -710,18 +715,35 @@ async function processTranscriptInBackground(jobId: string, transcriptText: stri
       sentences.push(transcriptText.trim())
     }
 
-    const classifiedTranscript = []
+    const classifiedTranscript: any[] = []
     const batchSize = 10
-    const totalBatches = Math.ceil(sentences.length / batchSize)
-
+    const parallelBatches = 5 // Process 5 batches in parallel
+    
+    // Create all batches first
+    const allBatches = []
     for (let i = 0; i < sentences.length; i += batchSize) {
       const batch = sentences.slice(i, i + batchSize)
-      const currentBatch = Math.floor(i / batchSize) + 1
-      
-      console.log(`🔄 Processing batch ${currentBatch}/${totalBatches}`)
+      allBatches.push({ batch, startIndex: i })
+    }
 
-      try {
-        const prompt = `Classify each sentence into one of these tracker categories or 'none':
+    const totalBatches = allBatches.length
+    console.log(`📊 Background job - Total batches to process: ${totalBatches}`)
+    console.log(`🚀 Processing ${parallelBatches} batches in parallel`)
+
+    // Process batches in parallel groups
+    for (let groupStart = 0; groupStart < allBatches.length; groupStart += parallelBatches) {
+      const batchGroup = allBatches.slice(groupStart, groupStart + parallelBatches)
+      const groupNumber = Math.floor(groupStart / parallelBatches) + 1
+      const totalGroups = Math.ceil(allBatches.length / parallelBatches)
+      
+      console.log(`🔄 Processing parallel group ${groupNumber}/${totalGroups} (${batchGroup.length} batches)`)
+
+      // Process all batches in this group in parallel
+      const batchPromises = batchGroup.map(async ({ batch, startIndex }) => {
+        const batchNumber = Math.floor(startIndex / batchSize) + 1
+        
+        try {
+          const prompt = `Classify each sentence into one of these tracker categories or 'none':
 - introduction: Professional greeting, name introductions, welcoming patient
 - rapport-building: Building personal connection, comfort checks, making patient feel at ease
 - listening-to-concerns: Patient expressing concerns, objections, fears that need addressing
@@ -731,45 +753,59 @@ async function processTranscriptInBackground(jobId: string, transcriptText: stri
 - follow-up-booking: Scheduling appointments, next steps, continuity planning
 
 Sentences to classify:
-${batch.map((s, idx) => `${i + idx + 1}. "${s.trim()}"`).join('\n')}
+${batch.map((s, idx) => `${startIndex + idx + 1}. "${s.trim()}"`).join('\n')}
 
-Respond with JSON array: [{"text": "sentence", "tracker": "category"}]`
+Respond with JSON object: {"classifications": [{"text": "sentence", "tracker": "category"}]}`
 
-        const response = await openai.chat.completions.create({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content: "You are an expert at classifying medical spa consultation sentences. Always respond with valid JSON."
-            },
-            {
-              role: "user",
-              content: prompt
-            }
-          ],
-          temperature: 0.2,
-          max_tokens: 2000,
-          response_format: { type: "json_object" }
-        })
+          const response = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
+            messages: [
+              {
+                role: "system",
+                content: "You are an expert at classifying medical spa consultation sentences. Always respond with valid JSON."
+              },
+              {
+                role: "user",
+                content: prompt
+              }
+            ],
+            temperature: 0.2,
+            max_tokens: 2000,
+            response_format: { type: "json_object" }
+          })
 
-        const result = JSON.parse(response.choices[0].message.content || '{"classifications": []}')
-        const classifications = result.classifications || []
-        
-        classifiedTranscript.push(...classifications)
-        
-      } catch (error) {
-        console.error(`❌ Error processing batch ${currentBatch}:`, error)
-        // Add sentences as unclassified on error
-        batch.forEach(sentence => {
-          classifiedTranscript.push({
+          const result = JSON.parse(response.choices[0].message.content || '{"classifications": []}')
+          const classifications = result.classifications || []
+          
+          return { batchNumber, classifications }
+          
+        } catch (error) {
+          console.error(`❌ Error processing batch ${batchNumber}:`, error)
+          // Add sentences as unclassified on error
+          const errorClassifications = batch.map(sentence => ({
             text: sentence.trim(),
             tracker: 'none'
-          })
-        })
-      }
+          }))
+          
+          return { batchNumber, classifications: errorClassifications, error: true }
+        }
+      })
 
-      // Update progress
-      const completed = Math.min(currentBatch, totalBatches)
+      // Wait for all batches in this parallel group to complete
+      const groupResults = await Promise.allSettled(batchPromises)
+      
+      // Process results from this parallel group
+      groupResults.forEach((result) => {
+        if (result.status === 'fulfilled') {
+          const { classifications } = result.value
+          classifiedTranscript.push(...classifications)
+        } else {
+          console.error(`❌ Batch failed completely:`, result.reason)
+        }
+      })
+
+      // Update progress after each parallel group
+      const completed = Math.min(groupStart + parallelBatches, totalBatches)
       const percentage = Math.round((completed / totalBatches) * 100)
       
       await jobRef.update({
@@ -778,9 +814,11 @@ Respond with JSON array: [{"text": "sentence", "tracker": "category"}]`
         'progress.percentage': percentage
       })
 
-      // Small delay between batches to avoid rate limiting
-      if (i + batchSize < sentences.length) {
-        await new Promise(resolve => setTimeout(resolve, 1000))
+      console.log(`✅ Parallel group ${groupNumber}/${totalGroups} completed`)
+
+      // Small delay between parallel groups to avoid overwhelming OpenAI API
+      if (groupStart + parallelBatches < allBatches.length) {
+        await new Promise(resolve => setTimeout(resolve, 2000))
       }
     }
 
@@ -1262,16 +1300,33 @@ async function classifyTranscriptDirectly(transcriptText: string) {
 
   const classifiedTranscript: any[] = []
   const batchSize = 10
+  const parallelBatches = 5 // Process 5 batches in parallel
 
+  // Create all batches first
+  const allBatches = []
   for (let i = 0; i < sentences.length; i += batchSize) {
     const batch = sentences.slice(i, i + batchSize)
-    const currentBatch = Math.floor(i / batchSize) + 1
-    const totalBatches = Math.ceil(sentences.length / batchSize)
-    
-    console.log(`🔄 Processing batch ${currentBatch}/${totalBatches}`)
+    allBatches.push({ batch, startIndex: i })
+  }
 
-    try {
-      const prompt = `Classify each sentence into one of these tracker categories or 'none':
+  const totalBatches = allBatches.length
+  console.log(`📊 Total batches to process: ${totalBatches}`)
+  console.log(`🚀 Processing ${parallelBatches} batches in parallel`)
+
+  // Process batches in parallel groups
+  for (let groupStart = 0; groupStart < allBatches.length; groupStart += parallelBatches) {
+    const batchGroup = allBatches.slice(groupStart, groupStart + parallelBatches)
+    const groupNumber = Math.floor(groupStart / parallelBatches) + 1
+    const totalGroups = Math.ceil(allBatches.length / parallelBatches)
+    
+    console.log(`🔄 Processing parallel group ${groupNumber}/${totalGroups} (${batchGroup.length} batches)`)
+
+    // Process all batches in this group in parallel
+    const batchPromises = batchGroup.map(async ({ batch, startIndex }) => {
+      const batchNumber = Math.floor(startIndex / batchSize) + 1
+      
+      try {
+        const prompt = `Classify each sentence into one of these tracker categories or 'none':
 - introduction: Professional greeting, name introductions, welcoming patient
 - rapport-building: Building personal connection, comfort checks, making patient feel at ease
 - listening-to-concerns: Patient expressing concerns, objections, fears that need addressing
@@ -1281,89 +1336,132 @@ async function classifyTranscriptDirectly(transcriptText: string) {
 - follow-up-booking: Scheduling appointments, next steps, continuity planning
 
 Sentences to classify:
-${batch.map((s, idx) => `${i + idx + 1}. "${s.trim()}"`).join('\n')}
+${batch.map((s, idx) => `${startIndex + idx + 1}. "${s.trim()}"`).join('\n')}
 
-Respond with JSON array: [{"text": "sentence", "tracker": "category"}]`
+Respond with JSON object: {"sentences": [{"text": "sentence", "tracker": "category"}]}`
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content: "You are an expert at classifying medical spa consultation sentences. Always respond with valid JSON."
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
-        temperature: 0.2,
-        max_tokens: 2000,
-        response_format: { type: "json_object" }
-      })
-
-      const result = JSON.parse(response.choices[0].message.content || '[]')
-      
-      // Handle different possible OpenAI response formats
-      let classifications = []
-      if (Array.isArray(result)) {
-        classifications = result
-      } else if (result.classifications && Array.isArray(result.classifications)) {
-        classifications = result.classifications
-      } else {
-        console.error('❌ Unexpected OpenAI response format:', result)
-        classifications = []
-      }
-      
-      // Add the classifications with proper format including metadata
-      classifications.forEach((classification: any, idx: number) => {
-        const sentenceIndex = i + idx
-        const sentence = batch[idx] || ''
-        
-        classifiedTranscript.push({
-          text: classification.text || sentence.trim(),
-          tracker: classification.tracker || 'none',
-          confidence: 0.8, // Default confidence
-          start: sentenceIndex * 1000, // Estimated start time in ms
-          end: (sentenceIndex + 1) * 1000, // Estimated end time in ms
-          timestamp: `${Math.floor(sentenceIndex * 1).toString().padStart(2, '0')}:${Math.floor((sentenceIndex * 1) % 60).toString().padStart(2, '0')}` // Estimated timestamp
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: "You are an expert at classifying medical spa consultation sentences. Always respond with valid JSON."
+            },
+            {
+              role: "user",
+              content: prompt
+            }
+          ],
+          temperature: 0.2,
+          max_tokens: 2000,
+          response_format: { type: "json_object" }
         })
-      })
-      
-      // If no classifications returned, add all sentences as 'none'
-      if (classifications.length === 0) {
-        batch.forEach((sentence, idx) => {
-          const sentenceIndex = i + idx
+
+        const result = JSON.parse(response.choices[0].message.content || '{"sentences": []}')
+        
+        // Handle different possible OpenAI response formats
+        let classifications = []
+        if (result.sentences && Array.isArray(result.sentences)) {
+          classifications = result.sentences
+        } else if (Array.isArray(result)) {
+          classifications = result
+        } else {
+          console.log(`❌ Unexpected OpenAI response format for batch ${batchNumber}:`, result)
+          // Still continue processing but log the unexpected format
+          classifications = result.sentences || []
+        }
+        
+        // Return classifications with metadata for this batch
+        const batchResults = classifications.map((classification: any, idx: number) => {
+          const sentenceIndex = startIndex + idx
+          const sentence = batch[idx] || ''
+          
+          return {
+            text: classification.text || sentence.trim(),
+            tracker: classification.tracker || 'none',
+            confidence: 0.8,
+            start: sentenceIndex * 1000,
+            end: (sentenceIndex + 1) * 1000,
+            timestamp: `${Math.floor(sentenceIndex * 1).toString().padStart(2, '0')}:${Math.floor((sentenceIndex * 1) % 60).toString().padStart(2, '0')}`,
+            batchNumber
+          }
+        })
+        
+        // If no classifications returned, add all sentences as 'none'
+        if (batchResults.length === 0) {
+          batch.forEach((sentence, idx) => {
+            const sentenceIndex = startIndex + idx
+            batchResults.push({
+              text: sentence.trim(),
+              tracker: 'none',
+              confidence: 0.8,
+              start: sentenceIndex * 1000,
+              end: (sentenceIndex + 1) * 1000,
+              timestamp: `${Math.floor(sentenceIndex * 1).toString().padStart(2, '0')}:${Math.floor((sentenceIndex * 1) % 60).toString().padStart(2, '0')}`,
+              batchNumber
+            })
+          })
+        }
+        
+        console.log(`✅ Batch ${batchNumber} completed: ${batchResults.length} sentences classified`)
+        return { batchNumber, results: batchResults }
+        
+      } catch (error) {
+        console.error(`❌ Error processing batch ${batchNumber}:`, error)
+        // Add sentences as unclassified on error
+        const errorResults = batch.map((sentence, idx) => {
+          const sentenceIndex = startIndex + idx
+          return {
+            text: sentence.trim(),
+            tracker: 'none',
+            confidence: 0.8,
+            start: sentenceIndex * 1000,
+            end: (sentenceIndex + 1) * 1000,
+            timestamp: `${Math.floor(sentenceIndex * 1).toString().padStart(2, '0')}:${Math.floor((sentenceIndex * 1) % 60).toString().padStart(2, '0')}`,
+            batchNumber,
+            error: true
+          }
+        })
+        
+        return { batchNumber, results: errorResults, error: true }
+      }
+    })
+
+    // Wait for all batches in this parallel group to complete
+    const groupResults = await Promise.allSettled(batchPromises)
+    
+    // Process results from this parallel group
+    groupResults.forEach((result, index) => {
+      if (result.status === 'fulfilled') {
+        const { results } = result.value
+        classifiedTranscript.push(...results)
+      } else {
+        const batchInfo = batchGroup[index]
+        const batchNumber = Math.floor(batchInfo.startIndex / batchSize) + 1
+        console.error(`❌ Batch ${batchNumber} failed completely:`, result.reason)
+        
+        // Add all sentences from failed batch as 'none'
+        batchInfo.batch.forEach((sentence: string, idx: number) => {
+          const sentenceIndex = batchInfo.startIndex + idx
           classifiedTranscript.push({
             text: sentence.trim(),
             tracker: 'none',
             confidence: 0.8,
             start: sentenceIndex * 1000,
             end: (sentenceIndex + 1) * 1000,
-            timestamp: `${Math.floor(sentenceIndex * 1).toString().padStart(2, '0')}:${Math.floor((sentenceIndex * 1) % 60).toString().padStart(2, '0')}`
+            timestamp: `${Math.floor(sentenceIndex * 1).toString().padStart(2, '0')}:${Math.floor((sentenceIndex * 1) % 60).toString().padStart(2, '0')}`,
+            batchNumber,
+            error: true
           })
         })
       }
-      
-    } catch (error) {
-      console.error(`❌ Error processing batch ${currentBatch}:`, error)
-      // Add sentences as unclassified on error with proper format
-      batch.forEach((sentence, idx) => {
-        const sentenceIndex = i + idx
-        classifiedTranscript.push({
-          text: sentence.trim(),
-          tracker: 'none',
-          confidence: 0.8,
-          start: sentenceIndex * 1000,
-          end: (sentenceIndex + 1) * 1000,
-          timestamp: `${Math.floor(sentenceIndex * 1).toString().padStart(2, '0')}:${Math.floor((sentenceIndex * 1) % 60).toString().padStart(2, '0')}`
-        })
-      })
-    }
-
-    // Small delay between batches to avoid rate limiting
-    if (i + batchSize < sentences.length) {
-      await new Promise(resolve => setTimeout(resolve, 1000))
+    })
+    
+    console.log(`✅ Parallel group ${groupNumber}/${totalGroups} completed`)
+    
+    // Small delay between parallel groups to avoid overwhelming OpenAI API
+    if (groupStart + parallelBatches < allBatches.length) {
+      await new Promise(resolve => setTimeout(resolve, 2000))
     }
   }
 

@@ -262,8 +262,6 @@ export const decryptUserData = async (encryptedData: EncryptedUserData, userCred
   }
 }
 
-// Global cache for successful decryption credentials
-const credentialCache = new Map<string, string>()
 
 // Get user display name (decrypted or fallback)
 export const getUserDisplayName = async (userEmail: string, encryptedUserData?: any): Promise<string> => {
@@ -273,149 +271,18 @@ export const getUserDisplayName = async (userEmail: string, encryptedUserData?: 
   
   // If we're on the server side, return email as fallback
   if (typeof window === 'undefined') {
-    //console.log('⚠️ getUserDisplayName called on server side, returning email as fallback:', userEmail)
     return userEmail
   }
   
   try {
-    // Create a hash of the encrypted data to use as cache key
-    const dataHash = JSON.stringify(encryptedUserData)
+    const decryptedData = await decryptUserData(encryptedUserData, userEmail)
     
-    // Check cache first
-    if (credentialCache.has(dataHash)) {
-      const cachedCredential = credentialCache.get(dataHash)!
-      //console.log('🔑 Using cached credential for user:', userEmail)
-      try {
-        const decryptedData = await decryptUserData(encryptedUserData, cachedCredential)
-        if (decryptedData.fullName && decryptedData.fullName !== "Unknown User" && decryptedData.fullName !== "Unknown Unknown") {
-          //console.log('✅ Successfully decrypted with cached credential:', decryptedData.fullName)
-          return decryptedData.fullName
-        }
-      } catch (error) {
-        //console.log('❌ Cached credential failed, removing from cache...')
-        credentialCache.delete(dataHash)
-      }
+    if (decryptedData.fullName && decryptedData.fullName !== "Unknown User") {
+      return decryptedData.fullName
     }
     
-    // Check if we have a working credential from previous tests (global window storage)
-    if (typeof window !== 'undefined' && (window as any).workingCredential) {
-      //console.log('🔑 Using previously found working credential:', (window as any).workingCredential)
-      try {
-        const decryptedData = await decryptUserData(encryptedUserData, (window as any).workingCredential)
-        if (decryptedData.fullName && decryptedData.fullName !== "Unknown User" && decryptedData.fullName !== "Unknown Unknown") {
-          //console.log('✅ Successfully decrypted with stored credential:', decryptedData.fullName)
-          // Cache this successful credential
-          credentialCache.set(dataHash, (window as any).workingCredential)
-          return decryptedData.fullName
-        }
-      } catch (error) {
-        //console.log('❌ Stored credential failed, trying other options...')
-      }
-    }
-    
-    // Try the most likely credential first (based on the logs showing success with this)
-    const priorityCredentials = [
-      't2rzy65efkMUFVT5WlRw9EkKLSw2', // The exact user ID that worked in logs
-      'XsV83ZBkZIPxN51ORDz1pPmCP8N2', // User ID from current Firestore document
-      'gK3mWRr3CJW1MQmSvQgG76wtNvD3', // Another user ID from logs
-      '34RA5QgaRhh60MV7B3ct1ofjfTz1', // Another user ID from logs
-      '4v77OYZjI6WTX9NXbdNZbHpan8r1', // Another user ID from logs
-      'ICFiWTkD4YdB3xABZFlUq7Nlcz62', // Another user ID from logs
-    ]
-    
-    // Try priority credentials first
-    for (const credential of priorityCredentials) {
-      try {
-        // console.log('🔐 Trying priority credential:', credential)
-        const decryptedData = await decryptUserData(encryptedUserData, credential)
-        
-        // Check if we got meaningful results (not "Unknown User")
-        if (decryptedData.fullName && decryptedData.fullName !== "Unknown User" && decryptedData.fullName !== "Unknown Unknown") {
-          //console.log('✅ Successfully decrypted with credential:', credential)
-          //console.log('👤 Decrypted name:', decryptedData.fullName)
-          
-          // Cache this successful credential
-          credentialCache.set(dataHash, credential)
-          
-          // Also store globally for other functions
-          if (typeof window !== 'undefined') {
-            (window as any).workingCredential = credential
-          }
-          
-          return decryptedData.fullName
-        }
-      } catch (error) {
-        //console.log('❌ Failed with priority credential:', credential, error instanceof Error ? error.message : 'Unknown error')
-        continue
-      }
-    }
-    
-    // Only try other credentials if priority ones failed
-    const fallbackCredentials = [
-      userEmail, // Original approach
-      userEmail.toLowerCase(), // Lowercase version
-      userEmail.replace(/[^a-zA-Z0-9]/g, ''), // Alphanumeric only
-      // Device-local email formats (common pattern from logs)
-      `${userEmail.split('@')[0]}@device.local`,
-      `${userEmail.split('@')[0].substring(0, 8)}@device.local`,
-      'user', // Generic user credential
-      'default', // Default credential
-      'admin', // Admin credential
-      'test', // Test credential
-      'demo', // Demo credential
-      'wisp', // Wisp-specific credential
-      'wispaibiz', // Based on Firebase project name
-      'ayush', // Specific to this user
-      'mahna', // Specific to this user
-      'ayushmahna', // Specific to this user
-      'ayush.mahna', // Specific to this user
-      'ayush_mahna', // Specific to this user
-      'Ayush', // Specific to this user
-      'Mahna', // Specific to this user
-      'Ayush Mahna', // Specific to this user
-      'AyushMahna', // Specific to this user
-      'Ayush.Mahna', // Specific to this user
-      'Ayush_Mahna', // Specific to this user
-      't2rzy65efkMUFVT5WlRw9EkKLSw2'.toLowerCase(),
-      't2rzy65efkMUFVT5WlRw9EkKLSw2'.replace(/[^a-zA-Z0-9]/g, ''),
-    ]
-    
-    //console.log('🔍 Trying fallback credentials for user:', userEmail)
-    
-    // Limit the number of credentials to try to prevent excessive delays
-    const limitedCredentials = fallbackCredentials.slice(0, 8)
-    
-    for (const credential of limitedCredentials) {
-      try {
-        //console.log('🔐 Trying credential:', credential)
-        const decryptedData = await decryptUserData(encryptedUserData, credential)
-        
-        // Check if we got meaningful results (not "Unknown User")
-        if (decryptedData.fullName && decryptedData.fullName !== "Unknown User" && decryptedData.fullName !== "Unknown Unknown") {
-          //console.log('✅ Successfully decrypted with credential:', credential)
-          //console.log('👤 Decrypted name:', decryptedData.fullName)
-          
-          // Cache this successful credential
-          credentialCache.set(dataHash, credential)
-          
-          // Also store globally for other functions
-          if (typeof window !== 'undefined') {
-            (window as any).workingCredential = credential
-          }
-          
-          return decryptedData.fullName
-        }
-      } catch (error) {
-        //console.log('❌ Failed with credential:', credential, error instanceof Error ? error.message : 'Unknown error')
-        continue
-      }
-    }
-    
-    // If all attempts failed, return the userEmail
-    //console.log('⚠️ All decryption attempts failed, using userEmail as fallback')
     return userEmail
   } catch (error) {
-    console.error('❌ Error in getUserDisplayName:', error)
     return userEmail
   }
 }
@@ -428,111 +295,4 @@ export const isUserDataEncrypted = (userData: any): boolean => {
          userData.encryptionAlgorithm === "AES-GCM-256"
 }
 
-// Test function to decrypt the specific data provided - updated with real data from logs
-export const testDecryption = async () => {
-  const testDataSets = [
-    {
-      name: "Test Data 1 (from logs)",
-      data: {
-        encryptedFirstName: "XUbPZNjD4R0ISY2+ZLgOe3/NJ35m5f18oYrhM+RN+0Me",
-        encryptedFullName: "p6MPEIIIZcxM8p8kvS+8PrguOmx8WKSULDLykpMpaykgFGCHIqq/",
-        encryptedLastName: "f0sTZIQt49mDd6uwl5kGlQa6yEU104BbwZX3wppuIZjX",
-        encryptionAlgorithm: "AES-GCM-256",
-        encryptionType: "cross-device",
-        encryptionVersion: "2.0"
-      }
-    },
-    {
-      name: "Test Data 2 (from logs)",
-      data: {
-        encryptedFirstName: "iZ6eV55lSCqds5dvUYzmFRSSWGZEShZOGjpbVQUUnWxkKA==",
-        encryptedFullName: "7qksJR0KbgV382qprSut/K1dDzh/QqrNo00qH6UQ3YG6XPXirzJx",
-        encryptedLastName: "/dkRwDFMnbVledLeu0UUjPE342/w/I3NNrnzWFoXdLs=",
-        encryptionAlgorithm: "AES-GCM-256",
-        encryptionType: "cross-device",
-        encryptionVersion: "2.0"
-      }
-    },
-    {
-      name: "Test Data 3 (cross-device)",
-      data: {
-        encryptedFirstName: "M58pFTP237njRzA9kGOaaVMJv7YiXAidr+0XPndeCWim",
-        encryptedFullName: "YABSYreyXB5+E8zirV/ssuBwSYnOCTC+zsOUF1d1HwOaNP5GK9NC",
-        encryptedLastName: "cG+lHstnRI7OXfZtcdpp2FuBIe6lkReU1/9KwWpGq47Y",
-        encryptionAlgorithm: "AES-GCM-256",
-        encryptionType: "cross-device",
-        encryptionVersion: "2.0"
-      }
-    }
-  ]
-  
-  // Store the working credential globally so we can use it
-  if (typeof window !== 'undefined') {
-    (window as any).workingCredential = null
-  }
-  
-  const possibleCredentials = [
-    't2rzy65efkMUFVT5WlRw9EkKLSw2', // The exact user ID from logs
-    '34RA5QgaRhh60MV7B3ct1ofjfTz1', // Another user ID from logs
-    '4v77OYZjI6WTX9NXbdNZbHpan8r1', // Another user ID from logs
-    'ICFiWTkD4YdB3xABZFlUq7Nlcz62', // Another user ID from logs
-    't2rzy65efkMUFVT5WlRw9EkKLSw2'.toLowerCase(),
-    't2rzy65efkMUFVT5WlRw9EkKLSw2'.replace(/[^a-zA-Z0-9]/g, ''),
-    '34RA5Qga@device.local', // Email format from logs
-    '4v77OYZj@device.local',
-    'ICFiWTkD@device.local',
-    'user',
-    'default',
-    'admin',
-    'test',
-    'demo',
-    'wisp',
-    'wispaibiz',
-    'ayush',
-    'mahna',
-    'ayushmahna',
-    'ayush.mahna',
-    'ayush_mahna',
-    'Ayush',
-    'Mahna',
-    'Ayush Mahna',
-    'AyushMahna',
-    'Ayush.Mahna',
-    'Ayush_Mahna'
-  ]
-  
-  //console.log('🧪 Testing decryption with multiple data sets...')
-  
-  for (const testSet of testDataSets) {
-    //console.log(`\n📊 Testing ${testSet.name}:`)
-    
-    for (const credential of possibleCredentials) {
-      try {
-        //console.log(`🔐 Testing ${testSet.name} with credential:`, credential)
-        const result = await decryptUserData(testSet.data, credential)
-        
-        if (result.fullName && result.fullName !== "Unknown User" && result.fullName !== "Unknown Unknown") {
-          //console.log(`🎉 SUCCESS! Found working credential for ${testSet.name}:`, credential)
-          //console.log('👤 Decrypted name:', result.fullName)
-          //console.log('🔍 Full result:', result)
-          
-          // Store the working credential globally
-          if (typeof window !== 'undefined') {
-            (window as any).workingCredential = credential
-            //console.log('💾 Stored working credential globally:', credential)
-          }
-          
-          return { credential, result, testSet: testSet.name }
-        }
-      } catch (error) {
-        // Only log every 5th failure to reduce noise
-        if (possibleCredentials.indexOf(credential) % 5 === 0) {
-          //console.log(`❌ Failed ${testSet.name} with credential:`, credential, error instanceof Error ? error.message : 'Unknown error')
-        }
-      }
-    }
-  }
-  
-  //console.log('❌ No working credential found for any test data set')
-  return null
-} 
+ 
