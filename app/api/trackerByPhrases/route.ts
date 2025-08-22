@@ -33,37 +33,19 @@ const jobs = global.jobStorage
  * Async TrackerByPhrases API - Start background processing and return job ID
  */
 export async function POST(request: NextRequest) {
-  console.log('\n' + '='.repeat(80))
-  console.log('🚀 [ASYNC-CLASSIFY-TRANSCRIPT-SENTENCES] API Route Called')
-  console.log('⏰ Timestamp:', new Date().toISOString())
-  console.log('='.repeat(80))
   
   try {
     const { transcriptText, jobId } = await request.json()
     
-    console.log('\n📄 STEP 1: Input validation')
-    console.log('   • Transcript length:', transcriptText?.length || 0)
-    console.log('   • Has content:', !!transcriptText)
-    console.log('   • Custom job ID:', jobId || 'auto-generated')
-
     if (!transcriptText) {
-      console.log('❌ STEP 1 FAILED: Missing transcript text')
       return NextResponse.json(
         { error: 'Missing transcript text' },
         { status: 400 }
       )
     }
 
-    console.log('✅ STEP 1 SUCCESS: Input validated')
-
     // Create background job
-    console.log('\n🎯 STEP 2: Creating background processing job')
     const backgroundJobId = createJob(transcriptText, jobId)
-    
-    console.log('✅ STEP 2 SUCCESS: Background job created')
-    console.log('   • Job ID:', backgroundJobId)
-    console.log('   • Status: Processing in background')
-    console.log('   • Poll URL: /api/trackerByPhrases/status/' + backgroundJobId)
 
     // Return immediately with job info
     return NextResponse.json({
@@ -76,11 +58,6 @@ export async function POST(request: NextRequest) {
     })
     
   } catch (error) {
-    console.log('\n❌ FATAL ERROR: Failed to start background job')
-    console.log('   • Error type:', error instanceof Error ? error.constructor.name : typeof error)
-    console.log('   • Error message:', error instanceof Error ? error.message : error)
-    console.log('   • Error stack:', error instanceof Error ? error.stack : 'No stack')
-    console.log('='.repeat(80))
     
     return NextResponse.json(
       { 
@@ -105,7 +82,6 @@ function createJob(transcriptText: string, jobId?: string): string {
   }
 
   jobs.set(id, job)
-  console.log(`📋 Created background job: ${id}`)
   
   // Start processing immediately in background
   processInBackground(id).catch(error => {
@@ -134,7 +110,6 @@ function updateJobStatus(
   if (status === 'processing' && !job.startedAt) job.startedAt = new Date()
   if (status === 'completed' || status === 'failed') job.completedAt = new Date()
 
-  console.log(`📊 Job ${jobId} status: ${status} (${job.progress.percentage}%)`)
 }
 
 function addJobResults(jobId: string, results: any[]): void {
@@ -158,30 +133,51 @@ async function processInBackground(jobId: string): Promise<void> {
       completed: 0
     })
 
-    console.log(`🚀 Starting background processing for job ${jobId}`)
+    console.log(`🚀 Starting parallel processing for job ${jobId}`)
     console.log(`   • Total sentences: ${sentences.length}`)
     console.log(`   • Total chunks: ${chunks.length}`)
+    console.log(`   • Concurrent batches: 5`)
 
-    for (let i = 0; i < chunks.length; i++) {
-      console.log(`📝 Job ${jobId}: Processing chunk ${i + 1}/${chunks.length}`)
+    const CONCURRENT_BATCHES = 5
+    let completedChunks = 0
 
-      try {
-        const chunkResults = await processChunk(chunks[i], i * 25, sentences.length)
-        addJobResults(jobId, chunkResults)
-        updateJobStatus(jobId, 'processing', {
-          completed: i + 1
-        })
-
-        if (i < chunks.length - 1) {
-          console.log(`⏳ Job ${jobId}: Waiting 2s before next chunk...`)
-          await sleep(2000)
+    // Process chunks in groups of 5 parallel batches
+    for (let i = 0; i < chunks.length; i += CONCURRENT_BATCHES) {
+      const batchGroup = chunks.slice(i, i + CONCURRENT_BATCHES)
+      console.log(`📦 Processing batch group ${Math.floor(i/CONCURRENT_BATCHES) + 1}: chunks ${i + 1}-${Math.min(i + CONCURRENT_BATCHES, chunks.length)}`)
+      
+      // Create promises for parallel processing
+      const batchPromises = batchGroup.map(async (chunk, batchIndex) => {
+        const chunkIndex = i + batchIndex
+        try {
+          const chunkResults = await processChunk(chunk, chunkIndex * 25, sentences.length)
+          return { success: true, results: chunkResults, chunkIndex }
+        } catch (chunkError) {
+          console.error(`❌ Job ${jobId} chunk ${chunkIndex + 1} failed:`, chunkError)
+          return { success: false, error: chunkError, chunkIndex }
         }
+      })
 
-      } catch (chunkError) {
-        console.error(`❌ Job ${jobId} chunk ${i + 1} failed:`, chunkError)
-        updateJobStatus(jobId, 'processing', {
-          completed: i + 1
-        })
+      // Wait for all batches in this group to complete
+      const batchResults = await Promise.all(batchPromises)
+      
+      // Process results
+      batchResults.forEach(result => {
+        if (result.success) {
+          addJobResults(jobId, result.results)
+        }
+        completedChunks++
+      })
+
+      // Update progress
+      updateJobStatus(jobId, 'processing', {
+        completed: completedChunks
+      })
+
+      // Brief pause between batch groups to respect rate limits
+      if (i + CONCURRENT_BATCHES < chunks.length) {
+        console.log(`⏳ Job ${jobId}: Brief pause before next batch group...`)
+        await sleep(1000) // Reduced from 2000ms to 1000ms
       }
     }
 

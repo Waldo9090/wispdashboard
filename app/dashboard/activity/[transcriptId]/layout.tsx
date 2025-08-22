@@ -56,7 +56,20 @@ export default function ActivityLayout({
   const [foundPersonId, setFoundPersonId] = useState<string | null>(null)
   const [processingInsights, setProcessingInsights] = useState(false)
   const [processingTimedOut, setProcessingTimedOut] = useState(false)
+  const [pollingJobId, setPollingJobId] = useState<string | null>(null)
+  const [processingProgress, setProcessingProgress] = useState<{
+    percentage: number;
+    completed: number;
+    total: number;
+    timeRemaining?: string;
+    partialResults?: number;
+  } | null>(null)
   const [selectedTracker, setSelectedTracker] = useState<string | null>(null)
+
+  // Reset processing timeout state on page load
+  useEffect(() => {
+    setProcessingTimedOut(false)
+  }, [])
 
   // Load current user status to filter sidebar items
   useEffect(() => {
@@ -423,7 +436,7 @@ export default function ActivityLayout({
       console.log('🔄 Processing insights for transcript:', resolvedParams.transcriptId)
       console.log('📋 Using Person ID:', foundPersonId)
 
-      // Call the Cloud Function instead of API route
+      // Call the Cloud Function directly
       if (!functions) {
         throw new Error('Firebase Functions not available')
       }
@@ -439,33 +452,111 @@ export default function ActivityLayout({
         setInsightsData(result.data.insightsData)
         console.log('📊 Insights data loaded:', {
           trackerByPhrasesCount: result.data.insightsData.trackerByPhrases?.length || 0,
-          trackersFound: Object.keys(result.data.insightsData.trackerAnalysis || {}).length
+          trackerScoringCount: Object.keys(result.data.insightsData.trackerScoring || {}).length
         })
       }
 
     } catch (error) {
       console.error('❌ Error processing insights:', error)
-      
-      // Check if this is a timeout/network error vs actual processing error
-      const errorMessage = error instanceof Error ? error.message : String(error)
-      const isTimeout = errorMessage.includes('timeout') || 
-                       errorMessage.includes('network') || 
-                       errorMessage.includes('fetch') ||
-                       errorMessage.includes('CONNECTION_REFUSED') ||
-                       error instanceof TypeError
-      
-      if (isTimeout) {
-        console.log('⚠️ Processing may still be running in the background. Check back in a few minutes.')
-        setProcessingTimedOut(true)
-        // Don't show error alert for timeouts - the processing might still succeed
-      } else {
-        // Only show error for actual processing failures
-        alert('Failed to process insights. Please try again.')
-      }
+      // Check if insights were processed automatically by the trigger
+      await checkForAutomaticProcessing()
     } finally {
       setProcessingInsights(false)
     }
   }
+
+  // Function to check if transcript was processed automatically
+  const checkForAutomaticProcessing = async () => {
+    const resolvedParams = await params
+    if (!foundPersonId || !resolvedParams.transcriptId) return
+
+    console.log('🔍 Checking for automatic processing results...')
+    
+    // Wait a bit and check Firestore for insights
+    setTimeout(async () => {
+      try {
+        const insightRef = doc(db, 'insights', foundPersonId, 'timestamps', resolvedParams.transcriptId)
+        const insightSnap = await getDoc(insightRef)
+        
+        if (insightSnap.exists()) {
+          console.log('✅ Found automatically processed insights!')
+          setInsightsData(insightSnap.data())
+          setProcessingTimedOut(false)
+        } else {
+          console.log('⏰ No insights found yet, transcript may still be processing automatically...')
+          setProcessingTimedOut(true)
+          
+          // Check again after 30 seconds
+          setTimeout(async () => {
+            const retrySnap = await getDoc(insightRef)
+            if (retrySnap.exists()) {
+              console.log('✅ Found insights after retry!')
+              setInsightsData(retrySnap.data())
+              setProcessingTimedOut(false)
+            }
+          }, 30000)
+        }
+      } catch (error) {
+        console.error('Error checking for automatic processing:', error)
+      }
+    }, 5000) // Wait 5 seconds for Cloud Function to complete
+  }
+
+  // Check for existing insights when page loads
+  useEffect(() => {
+    const loadExistingInsights = async () => {
+      const resolvedParams = await params
+      if (!foundPersonId || !resolvedParams.transcriptId) return
+      
+      // Always check for existing insights on page load
+      if (!insightsData) {
+        console.log('🔍 Loading existing insights on page load...')
+        try {
+          const insightRef = doc(db, 'insights', foundPersonId, 'timestamps', resolvedParams.transcriptId)
+          const insightSnap = await getDoc(insightRef)
+          
+          if (insightSnap.exists()) {
+            console.log('✅ Found existing insights!')
+            setInsightsData(insightSnap.data())
+            setLoadingInsights(false)
+          } else {
+            console.log('📝 No existing insights found')
+            setLoadingInsights(false)
+          }
+        } catch (error) {
+          console.error('Error loading existing insights:', error)
+          setLoadingInsights(false)
+        }
+      }
+    }
+    
+    if (foundPersonId && transcriptData) {
+      loadExistingInsights()
+    }
+  }, [foundPersonId, transcriptData])
+
+  // Check for automatic processing when transcript is loaded (fallback)
+  useEffect(() => {
+    const checkAutomaticProcessing = async () => {
+      const resolvedParams = await params
+      if (!foundPersonId || !resolvedParams.transcriptId) return
+      
+      // Check if this transcript was already processed automatically (fallback for real-time processing)
+      if (!insightsData) {
+        console.log('🔍 Checking if transcript was processed automatically...')
+        await checkForAutomaticProcessing()
+      }
+    }
+    
+    // Only run this if we don't have insights after the initial load check
+    const timeoutId = setTimeout(() => {
+      if (foundPersonId && transcriptData && !insightsData) {
+        checkAutomaticProcessing()
+      }
+    }, 2000) // Wait 2 seconds after mount before checking for automatic processing
+    
+    return () => clearTimeout(timeoutId)
+  }, [foundPersonId, transcriptData, insightsData])
 
   return (
     <div className="fixed inset-0 z-50 flex bg-white dark:bg-gray-950 font-display">
@@ -656,49 +747,36 @@ export default function ActivityLayout({
                           
                           {processingTimedOut ? (
                             <>
-                              <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-lg p-4 mb-4">
+                              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-4 mb-4">
                                 <div className="flex items-center justify-center mb-2">
-                                  <Clock className="w-5 h-5 text-orange-600 dark:text-orange-400 mr-2" />
-                                  <h3 className="text-sm font-medium text-orange-800 dark:text-orange-300">Processing in Progress</h3>
+                                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-2"></div>
+                                  <h3 className="text-sm font-medium text-blue-800 dark:text-blue-300">Auto-Processing in Progress</h3>
                                 </div>
-                                <p className="text-sm text-orange-700 dark:text-orange-400 mb-3">
-                                  Your transcript is still being analyzed in the background. This may take 5-10 minutes for longer conversations.
+                                <p className="text-sm text-blue-700 dark:text-blue-400 mb-3">
+                                  Your transcript is being analyzed automatically in the background. This typically takes 2-5 minutes.
                                 </p>
-                                <p className="text-xs text-orange-600 dark:text-orange-500">
-                                  Refresh this page in a few minutes to see the results, or click "Check Status" below.
+                                <p className="text-xs text-blue-600 dark:text-blue-500">
+                                  The page will update automatically when processing completes. No action needed!
                                 </p>
                               </div>
-                              
-                              {foundPersonId && transcriptData && (
-                                <div className="flex gap-3 justify-center">
-                                  <Button
-                                    onClick={() => {
-                                      setProcessingTimedOut(false)
-                                      window.location.reload()
-                                    }}
-                                    variant="outline"
-                                    size="sm"
-                                  >
-                                    Refresh Page
-                                  </Button>
-                                  <Button
-                                    onClick={() => {
-                                      setProcessingTimedOut(false)
-                                      processInsights()
-                                    }}
-                                    disabled={processingInsights}
-                                    variant="outline"
-                                    size="sm"
-                                  >
-                                    Check Status
-                                  </Button>
-                                </div>
-                              )}
                             </>
+                          ) : processingInsights ? (
+                            <div className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4 mb-4">
+                              <div className="flex items-center justify-center mb-2">
+                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-600 mr-2"></div>
+                                <h3 className="text-sm font-medium text-purple-800 dark:text-purple-300">Processing Transcript</h3>
+                              </div>
+                              <p className="text-sm text-purple-700 dark:text-purple-400">
+                                Analyzing conversation patterns and generating insights...
+                              </p>
+                            </div>
                           ) : (
                             <>
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                                Transcript Analysis
+                              </h3>
                               <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                                Process this transcript to analyze conversation tracking and highlight key phrases.
+                                This transcript will be analyzed automatically when created. If no analysis is available, you can trigger it manually.
                               </p>
                               {foundPersonId && transcriptData && (
                                 <Button
@@ -712,7 +790,7 @@ export default function ActivityLayout({
                                       Processing...
                                     </div>
                                   ) : (
-                                    'Process Transcript'
+                                    'Analyze Transcript'
                                   )}
                                 </Button>
                               )}
@@ -1518,22 +1596,33 @@ export default function ActivityLayout({
                           ) : (
                             <div className="text-center py-8">
                               <TrendingUp className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">No feedback data available</p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">No analysis data available</p>
                               <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">
-                                This transcript hasn't been analyzed yet. Run the insights analysis to generate feedback.
+                                Transcripts are analyzed automatically when created. If no analysis is showing, it may still be processing.
                               </p>
-                              {foundPersonId && !processingInsights && (
+                              {processingTimedOut && (
+                                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg p-3 mb-4">
+                                  <div className="flex items-center justify-center mb-1">
+                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mr-2"></div>
+                                    <span className="text-sm font-medium text-blue-800 dark:text-blue-300">Processing...</span>
+                                  </div>
+                                  <p className="text-xs text-blue-600 dark:text-blue-500">
+                                    Analysis in progress
+                                  </p>
+                                </div>
+                              )}
+                              {foundPersonId && !processingInsights && !processingTimedOut && (
                                 <Button
                                   onClick={processInsights}
                                   className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
                                 >
-                                  Process Insights
+                                  Analyze Now
                                 </Button>
                               )}
                               {processingInsights && (
                                 <div className="flex items-center justify-center gap-2">
                                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
-                                  <span className="text-sm text-gray-500 dark:text-gray-400">Processing insights...</span>
+                                  <span className="text-sm text-gray-500 dark:text-gray-400">Processing...</span>
                                 </div>
                               )}
                             </div>

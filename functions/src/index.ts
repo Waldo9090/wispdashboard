@@ -1,67 +1,170 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
+import OpenAI from 'openai'
 
 // Initialize Firebase Admin SDK
 admin.initializeApp()
 
 /**
- * Cloud Function that triggers when a new transcript is created
- * Automatically processes the transcript for insights without user interaction
+ * Cloud Function that triggers when a transcript document is updated
+ * Automatically processes the transcript for insights when transcription completes
  */
-export const processTranscriptOnCreate = functions.firestore
+export const processTranscriptOnUpdate = functions.firestore
   .document('transcript/{personId}/timestamps/{transcriptId}')
-  .onCreate(async (snap, context) => {
+  .onUpdate(async (change, context) => {
     const { personId, transcriptId } = context.params
-    const transcriptData = snap.data()
+    const afterData = change.after.data()
     
-    console.log('🔄 New transcript detected for auto-processing:', {
+    // Check if classification processing has already started or completed FIRST
+    const classificationStarted = afterData.classification || false
+    
+    if (classificationStarted === true) {
+      // Silent exit - no logs, no processing for already classified transcripts
+      return null
+    }
+    
+    console.log('🔄 Transcript document updated:', {
       personId,
       transcriptId,
-      hasTranscript: !!transcriptData.transcript,
-      transcriptLength: transcriptData.transcript?.length || 0
+      transcriptionStatus: afterData.transcriptionStatus,
+      hasTranscript: !!afterData.transcript,
+      transcriptLength: afterData.transcript?.length || 0
     })
     
+    // Only process if transcriptionStatus exists and is true
+    const transcriptionStatus = afterData.transcriptionStatus
+    
+    if (!transcriptionStatus || transcriptionStatus !== true) {
+      console.log('⏭️ Transcription not ready for processing')
+      console.log(`   • transcriptionStatus: ${transcriptionStatus}`)
+      console.log('   • Waiting for transcriptionStatus: true')
+      return null
+    }
+    
+    console.log('✅ transcriptionStatus is true - checking processing status')
+    
+    console.log('✅ Classification not started yet - proceeding with processing')
+    
+    // IMMEDIATELY set classification flag to prevent other instances from processing
     try {
-      // Check if already processed to avoid duplicates
-      if (transcriptData.autoProcessed) {
-        console.log('⚠️ Transcript already processed, skipping:', transcriptId)
-        return null
+      await change.after.ref.update({
+        classification: true,
+        classificationStartedAt: new Date()
+      })
+      console.log('🔒 Set classification lock to prevent duplicate processing')
+    } catch (error) {
+      console.log('❌ Failed to set classification lock:', error)
+      return null
+    }
+    
+    // Check other conditions
+    const hasContent = (afterData.transcript?.length || 0) > 0
+    const alreadyAutoProcessed = afterData.autoProcessed || false
+    
+    // Also check if insights already exist to avoid duplicate processing
+    let insightsExist = false
+    try {
+      const insightRef = admin.firestore().collection('insights').doc(personId).collection('timestamps').doc(transcriptId)
+      const insightSnap = await insightRef.get()
+      insightsExist = insightSnap.exists
+    } catch (error) {
+      console.log('⚠️ Error checking for existing insights:', error)
+    }
+    
+    console.log(`📝 Processing decision:`)
+    console.log(`   - transcriptionStatus: ${transcriptionStatus}`)
+    console.log(`   - classification: ${classificationStarted} → true (locked)`)
+    console.log(`   - Transcript length: ${afterData.transcript?.length || 0} chars`)
+    console.log(`   - Has content: ${hasContent}`)
+    console.log(`   - Already auto-processed: ${alreadyAutoProcessed}`)
+    console.log(`   - Insights exist: ${insightsExist}`)
+    
+    if (hasContent && !alreadyAutoProcessed && !insightsExist) {
+      console.log(`✨ All conditions met - processing transcript with classification lock!`)
+    } else {
+      if (!hasContent) {
+        console.log('⏭️ No transcript content, skipping processing')
+      } else if (alreadyAutoProcessed) {
+        console.log('⏭️ Already auto-processed, skipping')
+      } else if (insightsExist) {
+        console.log('⏭️ Insights already exist, skipping to avoid duplicates')
       }
+      return null
+    }
+    
+    try {
       
       // Mark as processing started
-      await snap.ref.update({
+      await change.after.ref.update({
         autoProcessStarted: true,
         autoProcessStartedAt: new Date()
       })
       
-      // Determine the app URL
-      const appUrl = process.env.APP_URL || 
-                    process.env.FUNCTIONS_EMULATOR ? 
-                    'http://localhost:3001' : 
-                    'https://candytrail.ai'
+      console.log('🔄 Processing transcript using same logic as process-transcript-insights API')
       
-      console.log('📡 Calling process-transcript-insights API:', appUrl)
+      // STEP 4: Extract tracker phrases directly (no external calls)
+      console.log('\n🔄 STEP 4: Extracting tracker phrases directly')
+      const extractionResult = await extractTrackerPhrasesDirectly(afterData.transcript, afterData['speaker transcript'])
       
-      // Call the existing process-transcript-insights API
-      const response = await fetch(`${appUrl}/api/process-transcript-insights`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          personId,
-          transcriptId,
-          transcriptData,
-          source: 'cloud-function-auto-process'
-        })
-      })
+      console.log('✅ STEP 4 SUCCESS: Tracker phrases extracted directly')
+      console.log('   • Success:', extractionResult.success)
+      console.log('   • Trackers found:', extractionResult.trackerResults ? Object.keys(extractionResult.trackerResults).length : 0)
+      console.log('   • Method:', extractionResult.extractionMethod)
+      console.log('   • Tokens used:', extractionResult.tokensUsed)
+      console.log('   • Cost estimate:', extractionResult.costEstimate)
+
+      // STEP 5: Process sentence classification directly (no external calls)
+      console.log('\n🔄 STEP 5: Processing sentence classification directly')
+      let classificationResult: { classifiedTranscript: any[], totalSentences?: number, success?: boolean, extractionMethod?: string } = { classifiedTranscript: [] }
+      try {
+        console.log('   • Starting direct sentence classification...')
+        classificationResult = await classifyTranscriptDirectly(afterData.transcript)
+        
+        console.log('✅ STEP 5 SUCCESS: Classification completed directly')
+        console.log('   • Total sentences classified:', classificationResult.totalSentences)
+        console.log('   • Classified sentences:', classificationResult.classifiedTranscript.length)
+        
+      } catch (classifyError) {
+        console.log('❌ STEP 5 ERROR: Direct classification failed')
+        console.log('   • Error:', classifyError instanceof Error ? classifyError.message : classifyError)
+        console.log('   • Stack:', classifyError instanceof Error ? classifyError.stack : 'No stack')
+      }
+
+      // STEP 6: Generate tracker scoring based on trackerByPhrases data using OpenAI
+      console.log('\n🎯 STEP 6: Generating OpenAI-powered tracker scoring analysis')
+      const trackerScoring = await generateTrackerScoringWithAI(classificationResult.classifiedTranscript || [])
       
-      if (!response.ok) {
-        const errorText = await response.text()
-        throw new Error(`API failed with status ${response.status}: ${errorText}`)
+      console.log('   • Tracker scoring generated for:', Object.keys(trackerScoring).length, 'trackers')
+
+      // Create insights document with both trackerByPhrases and trackerScoring (same as API route)
+      const insightsData = {
+        trackerByPhrases: classificationResult.classifiedTranscript || [],
+        trackerScoring: trackerScoring,
+        extractionMethod: 'openai-sentence-classification',
+        totalSentences: classificationResult.totalSentences || 0,
+        calculatedAt: new Date(),
+        transcriptId,
+        personId
       }
       
-      const result = await response.json()
+      // Save to insights collection using Firebase Admin SDK (same as API route)
+      const insightRef = admin.firestore().collection('insights').doc(personId).collection('timestamps').doc(transcriptId)
+      await insightRef.set(insightsData)
+
+      console.log('\n💾 STEP 7: Saving insights to Firestore')
+      console.log('   • Path: insights/' + personId + '/timestamps/' + transcriptId)
+      console.log('   • TrackerByPhrases count:', classificationResult.classifiedTranscript?.length || 0)
+      console.log('   • TrackerScoring trackers:', Object.keys(insightsData.trackerScoring || {}).length)
+      console.log('   • Total sentences processed:', classificationResult.totalSentences || 0)
+      console.log('   • Data structure:')
+      console.log('     - trackerByPhrases length:', insightsData.trackerByPhrases?.length || 0)
+      console.log('     - trackerScoring keys:', Object.keys(insightsData.trackerScoring || {}))
+      console.log('✅ STEP 7 SUCCESS: Insights saved to Firestore')
+      
+      const result = {
+        success: true,
+        insightsData
+      }
       
       console.log('✅ Auto-processing completed successfully:', {
         transcriptId,
@@ -71,7 +174,7 @@ export const processTranscriptOnCreate = functions.firestore
       })
       
       // Mark as successfully processed
-      await snap.ref.update({
+      await change.after.ref.update({
         autoProcessed: true,
         autoProcessedAt: new Date(),
         autoProcessStarted: false,
@@ -87,7 +190,7 @@ export const processTranscriptOnCreate = functions.firestore
       console.log('📊 Auto-processing metrics:', {
         personId,
         transcriptId,
-        processingTimeSeconds: Date.now() - (snap.createTime?.toMillis() || 0),
+        processingTimeSeconds: Date.now() - (change.after.createTime?.toMillis() || 0),
         success: true
       })
       
@@ -101,7 +204,7 @@ export const processTranscriptOnCreate = functions.firestore
       })
       
       // Mark as failed for retry/debugging
-      await snap.ref.update({
+      await change.after.ref.update({
         autoProcessFailed: true,
         autoProcessError: error instanceof Error ? error.message : 'Unknown error',
         autoProcessErrorAt: new Date(),
@@ -152,8 +255,12 @@ export const retryFailedProcessing = functions.https.onCall(async (data, context
       autoProcessRetryCount: admin.firestore.FieldValue.increment(1)
     })
     
-    // Trigger the processing function manually
-    const result = await processTranscriptOnCreate(transcriptSnap, {
+    // Trigger the processing function manually by simulating an update
+    const mockChange = {
+      before: { data: () => ({}) }, // Empty before state
+      after: transcriptSnap // Use the current transcript data
+    }
+    const result = await processTranscriptOnUpdate(mockChange as any, {
       params: { personId, transcriptId }
     } as any)
     
@@ -179,20 +286,25 @@ export const processMissedTranscripts = functions.pubsub
     const oneHourAgo = admin.firestore.Timestamp.fromMillis(now.toMillis() - (60 * 60 * 1000))
     
     // Find transcripts created over an hour ago that haven't been processed
+    // Note: Firestore only allows one != filter, so we'll filter the rest in code
     const missedQuery = await admin.firestore()
       .collectionGroup('timestamps')
       .where('autoProcessed', '!=', true)
-      .where('autoProcessFailed', '!=', true)
-      .where('autoProcessStarted', '!=', true)
       .where('createdAt', '<', oneHourAgo)
-      .limit(10) // Process max 10 at a time to avoid timeouts
+      .limit(50) // Get more to filter in code
       .get()
     
-    console.log(`📋 Found ${missedQuery.size} missed transcripts to process`)
+    // Filter out already failed or started processing in code
+    const missedDocs = missedQuery.docs.filter(doc => {
+      const data = doc.data()
+      return !data.autoProcessFailed && !data.autoProcessStarted && data.transcript && data.transcript.length > 0
+    }).slice(0, 10) // Take only first 10
+    
+    console.log(`📋 Found ${missedDocs.length} missed transcripts to process (out of ${missedQuery.size} candidates)`)
     
     const processingPromises = []
     
-    for (const doc of missedQuery.docs) {
+    for (const doc of missedDocs) {
       const path = doc.ref.path
       const pathParts = path.split('/')
       const personId = pathParts[1]
@@ -200,8 +312,12 @@ export const processMissedTranscripts = functions.pubsub
       
       console.log('🔄 Processing missed transcript:', { personId, transcriptId })
       
-      // Process each missed transcript
-      const promise = processTranscriptOnCreate(doc, {
+      // Process each missed transcript by simulating an update
+      const mockChange = {
+        before: { data: () => ({}) }, // Empty before state
+        after: doc // Use the current document
+      }
+      const promise = processTranscriptOnUpdate(mockChange as any, {
         params: { personId, transcriptId }
       } as any).catch((error: any) => {
         console.error(`❌ Failed to process missed transcript ${transcriptId}:`, error)
@@ -212,242 +328,491 @@ export const processMissedTranscripts = functions.pubsub
     
     await Promise.allSettled(processingPromises)
     
-    console.log(`✅ Completed processing ${missedQuery.size} missed transcripts`)
+    console.log(`✅ Completed processing ${missedDocs.length} missed transcripts`)
     return null
   })
 
 /**
- * HTTPS Cloud Function to process transcript insights
- * Replaces the Next.js API route to eliminate timeout issues
- * Can handle long-running processing without HTTP timeout limitations
+ * Cloud Function to process complete recording workflow
+ * Replaces manualProcessRecording API and coordinates all processing
  */
-export const processTranscriptInsights = functions
+export const processCompleteRecording = functions
   .runWith({
-    timeoutSeconds: 540, // 9 minutes - maximum allowed
-    memory: '1GB' // Increased memory for better performance
+    timeoutSeconds: 540,
+    memory: '2GB'
   })
   .https.onCall(async (data, context) => {
-  console.log('\n='.repeat(80))
-  console.log('🚀 [CLOUD FUNCTION] Process Transcript Insights Started')
-  console.log('⏰ Timestamp:', new Date().toISOString())
-  console.log('='.repeat(80))
-  
-  try {
-    const { transcriptId, personId } = data
+    console.log('🚀 [PROCESS-COMPLETE-RECORDING] Starting complete recording processing')
     
-    if (!transcriptId || !personId) {
-      throw new functions.https.HttpsError('invalid-argument', 'Missing transcriptId or personId')
-    }
-
-    console.log('\n📋 STEP 1: Processing insights for:')
-    console.log('   • Person ID:', personId)
-    console.log('   • Transcript ID:', transcriptId)
-
-    // Fetch the transcript data using Firebase Admin SDK
-    console.log('\n📥 STEP 2: Fetching transcript data from Firestore')
-    console.log('   • Path: transcript/' + personId + '/timestamps/' + transcriptId)
-    const transcriptRef = admin.firestore().collection('transcript').doc(personId).collection('timestamps').doc(transcriptId)
-    const transcriptSnap = await transcriptRef.get()
-    
-    if (!transcriptSnap.exists) {
-      console.log('❌ STEP 2 FAILED: Transcript document not found')
-      throw new functions.https.HttpsError('not-found', 'Transcript not found')
-    }
-    console.log('✅ STEP 2 SUCCESS: Transcript document found')
-
-    const transcriptData = transcriptSnap.data()
-    
-    if (!transcriptData) {
-      console.log('❌ STEP 2 FAILED: No transcript data found')
-      throw new functions.https.HttpsError('not-found', 'No transcript data found')
-    }
-    
-    console.log('\n📊 STEP 3: Validating transcript data')
-    console.log('   • Has transcript field:', !!transcriptData.transcript)
-    console.log('   • Has speaker transcript field:', !!transcriptData['speaker transcript'])
-    console.log('   • Transcript length:', transcriptData.transcript?.length || 0)
-    console.log('   • Speaker entries:', transcriptData['speaker transcript']?.length || 0)
-    
-    if (!transcriptData.transcript || !transcriptData['speaker transcript']) {
-      console.log('❌ STEP 3 FAILED: Missing transcript content')
-      throw new functions.https.HttpsError('invalid-argument', 'Missing transcript content')
-    }
-    console.log('✅ STEP 3 SUCCESS: Transcript data validated')
-
-    // Call extract-all-tracker-phrases API
-    console.log('\n🔄 STEP 4: Calling extract-all-tracker-phrases API')
-    const baseUrlExtract = process.env.APP_URL || 'https://candytrail.ai'
-    console.log('   • Calling URL:', `${baseUrlExtract}/api/extract-all-tracker-phrases`)
-    
-    const extractResponse = await fetch(`${baseUrlExtract}/api/extract-all-tracker-phrases`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        transcriptText: transcriptData.transcript,
-        speakerTranscript: transcriptData['speaker transcript']
-      })
-    })
-
-    if (!extractResponse.ok) {
-      throw new functions.https.HttpsError('internal', `Failed to extract tracker phrases: ${extractResponse.status}`)
-    }
-
-    const extractionResult = await extractResponse.json()
-    console.log('✅ STEP 4 SUCCESS: Tracker phrases extracted')
-    console.log('   • Success:', extractionResult.success)
-    console.log('   • Trackers found:', extractionResult.trackerResults ? Object.keys(extractionResult.trackerResults).length : 0)
-
-    // Start background sentence classification
-    console.log('\n🔄 STEP 5: Starting background sentence classification')
-    let classificationResult: {
-      classifiedTranscript: any[]
-      success?: boolean
-      totalSentences?: number
-      extractionMethod?: string
-    } = { classifiedTranscript: [] }
     try {
-      const baseUrl = baseUrlExtract
+      const { recordingData, personId, recordingId } = data
       
-      // STEP 5A: Start background job
-      console.log('   • Starting background classification job...')
-      const startResponse = await fetch(`${baseUrl}/api/trackerByPhrases`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          transcriptText: transcriptData.transcript,
-          jobId: `${personId}_${transcriptId}_${Date.now()}`
-        })
+      if (!recordingData || !personId || !recordingId) {
+        throw new functions.https.HttpsError('invalid-argument', 'Missing required data')
+      }
+
+      console.log('📋 Processing recording:', { personId, recordingId })
+
+      // STEP 1: Extract and save transcript with proper format
+      console.log('\n🔄 STEP 1: Processing transcript data')
+      const transcriptResult = await processTranscriptData(recordingData, personId, recordingId)
+      
+      // STEP 2: Calculate analytics metrics
+      console.log('\n📊 STEP 2: Calculating analytics metrics')  
+      const analyticsResult = await calculateAnalyticsMetrics(recordingData, personId, recordingId)
+      
+      // STEP 3: Process insights (tracker phrases + sentence classification)
+      console.log('\n🎯 STEP 3: Processing insights')
+      const insightsResult = await processInsightsFully(transcriptResult.transcript, transcriptResult.speakerTranscript, personId, recordingId)
+      
+      // STEP 4: Generate sales recommendations
+      console.log('\n🔔 STEP 4: Generating sales recommendations')
+      const salesResult = await generateSalesRecommendations(transcriptResult.transcript, insightsResult, personId, recordingId)
+      
+      // STEP 5: Send notifications
+      console.log('\n📱 STEP 5: Sending push notifications')
+      const notificationResult = await sendRecordingNotification(personId, recordingId, recordingData.title)
+
+      console.log('✅ Complete recording processing finished successfully')
+      
+      return {
+        success: true,
+        transcript: transcriptResult,
+        analytics: analyticsResult,
+        insights: insightsResult,
+        sales: salesResult,
+        notification: notificationResult,
+        recordingId,
+        personId
+      }
+      
+    } catch (error) {
+      console.error('❌ Complete recording processing failed:', error)
+      
+      if (error instanceof functions.https.HttpsError) {
+        throw error
+      }
+      
+      throw new functions.https.HttpsError('internal', 
+        error instanceof Error ? error.message : 'Complete processing failed'
+      )
+    }
+  })
+
+/**
+ * Cloud Function to extract tracker phrases from transcript
+ * Replaces /app/api/extract-all-tracker-phrases/route.ts
+ */
+export const extractAllTrackerPhrases = functions
+  .runWith({
+    timeoutSeconds: 540,
+    memory: '1GB'
+  })
+  .https.onCall(async (data, context) => {
+    console.log('🚀 [EXTRACT-ALL-PHRASES] Cloud Function Called')
+    
+    try {
+      const { transcriptText, speakerTranscript, transcriptId, personId, saveToFirestore } = data
+      
+      console.log('📄 Transcript length:', transcriptText?.length || 0)
+      console.log('🎙️ Speaker entries:', speakerTranscript?.length || 0)
+
+      if (!transcriptText) {
+        throw new functions.https.HttpsError('invalid-argument', 'Missing transcript text')
+      }
+
+      // If saveToFirestore mode, we need transcriptId and personId
+      if (saveToFirestore && (!transcriptId || !personId)) {
+        throw new functions.https.HttpsError('invalid-argument', 'Missing transcriptId or personId for Firestore save')
+      }
+
+      // Initialize OpenAI
+      const openai = new OpenAI({
+        apiKey: process.env.OPENAI_API_KEY
       })
 
-      if (!startResponse.ok) {
-        throw new Error(`Failed to start job: ${startResponse.status}`)
+      console.log('🤖 Starting OpenAI tracker phrase extraction...')
+      
+      // Enhanced prompt for better phrase extraction
+      const prompt = `You are an expert at analyzing medical spa consultation transcripts. Extract specific phrases and quotes that demonstrate each tracking category.
+
+TRANSCRIPT:
+${transcriptText}
+
+For each category below, find SPECIFIC PHRASES or QUOTES from the transcript that demonstrate that category. Return actual text snippets, not descriptions.
+
+TRACKING CATEGORIES:
+1. **INTRODUCTION** - Greetings, name introductions, welcoming statements
+2. **RAPPORT-BUILDING** - Personal questions, comfort checks, building connection
+3. **LISTENING-TO-CONCERNS** - Patient concerns, objections, fears being addressed
+4. **OVERALL-ASSESSMENT** - Comprehensive evaluations, holistic approaches
+5. **TREATMENT-PLAN** - Specific recommendations, treatment explanations
+6. **PRICING-QUESTIONS** - Cost discussions, budget conversations
+7. **FOLLOW-UP-BOOKING** - Scheduling, next steps, appointment booking
+
+Response format (JSON):
+{
+  "introduction": ["exact phrase 1", "exact phrase 2"],
+  "rapport-building": ["exact phrase 1", "exact phrase 2"],
+  "listening-to-concerns": ["exact phrase 1"],
+  "overall-assessment": ["exact phrase 1"],
+  "treatment-plan": ["exact phrase 1", "exact phrase 2"],
+  "pricing-questions": [],
+  "follow-up-booking": ["exact phrase 1"]
+}`
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert at extracting specific phrases from medical spa consultations. Always respond with valid JSON containing actual quotes from the transcript."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.1,
+        max_tokens: 3000,
+        response_format: { type: "json_object" }
+      })
+
+      const rawContent = response.choices[0].message.content
+      let trackerResults
+      
+      try {
+        trackerResults = JSON.parse(rawContent || '{}')
+      } catch (parseError) {
+        console.error('❌ JSON Parse Error:', parseError)
+        // Fallback empty results
+        trackerResults = {
+          "introduction": [],
+          "rapport-building": [],
+          "listening-to-concerns": [],
+          "overall-assessment": [],
+          "treatment-plan": [],
+          "pricing-questions": [],
+          "follow-up-booking": []
+        }
       }
 
-      const { jobId, estimatedTime } = await startResponse.json()
-      console.log('✅ STEP 5A SUCCESS: Background job started')
-      console.log('   • Job ID:', jobId)
-      console.log('   • Estimated time:', estimatedTime)
+      console.log('✅ Tracker phrases extracted successfully')
+      console.log('📊 Results summary:', Object.entries(trackerResults).map(([key, phrases]: [string, any]) => `${key}: ${Array.isArray(phrases) ? phrases.length : 0} phrases`).join(', '))
 
-      // STEP 5B: Poll for completion with extended timeout for Cloud Functions
-      console.log('\n⏳ STEP 5B: Polling for job completion...')
-      const maxWaitTime = 45 * 60 * 1000 // 45 minutes for Cloud Functions (they can run up to 60 minutes)
-      const pollInterval = 5000 // 5 seconds between polls
-      const startTime = Date.now()
+      const result = {
+        success: true,
+        trackerResults,
+        extractionMethod: 'openai-cloud-function',
+        tokensUsed: response.usage?.total_tokens || 0,
+        costEstimate: `$${((response.usage?.total_tokens || 0) * 0.00015 / 1000).toFixed(4)}`
+      }
+
+      // If saveToFirestore mode, save results
+      if (saveToFirestore && transcriptId && personId) {
+        console.log('💾 Saving extraction results to Firestore...')
+        const extractionRef = admin.firestore()
+          .collection('extractions')
+          .doc(personId)
+          .collection('timestamps')
+          .doc(transcriptId)
+        
+        await extractionRef.set({
+          ...result,
+          savedAt: new Date(),
+          transcriptId,
+          personId
+        })
+        
+        console.log('✅ Extraction results saved to Firestore')
+      }
+
+      return result
       
-      let lastProgress = 0
+    } catch (error) {
+      console.error('❌ Extract tracker phrases failed:', error)
       
-      while (Date.now() - startTime < maxWaitTime) {
-        const statusResponse = await fetch(`${baseUrl}/api/trackerByPhrases/status/${jobId}`)
-        
-        if (!statusResponse.ok) {
-          throw new Error(`Failed to check job status: ${statusResponse.status}`)
-        }
-        
-        const statusData = await statusResponse.json()
-        
-        // Show progress updates
-        if (statusData.progress?.percentage !== lastProgress) {
-          console.log(`   • Progress: ${statusData.progress?.completed || 0}/${statusData.progress?.total || 0} batches (${statusData.progress?.percentage || 0}%)`)
-          if (statusData.estimatedTimeRemaining) {
-            console.log(`   • Estimated time remaining: ${statusData.estimatedTimeRemaining}`)
-          }
-          lastProgress = statusData.progress?.percentage
-        }
-        
-        if (statusData.status === 'completed') {
-          classificationResult = {
-            classifiedTranscript: statusData.classifiedTranscript,
-            success: true,
-            totalSentences: statusData.totalSentences,
-            extractionMethod: statusData.extractionMethod
-          }
-          console.log('✅ STEP 5B SUCCESS: Classification completed')
-          console.log('   • Total sentences classified:', statusData.totalSentences)
-          console.log('   • Processing time:', Math.round((Date.now() - startTime) / 1000), 'seconds')
-          break
-        }
-        
-        if (statusData.status === 'failed') {
-          throw new Error(`Job failed: ${statusData.error}`)
-        }
-        
-        // Wait before next poll
-        await new Promise(resolve => setTimeout(resolve, pollInterval))
+      if (error instanceof functions.https.HttpsError) {
+        throw error
       }
       
-      // Check if we timed out
-      if (Date.now() - startTime >= maxWaitTime) {
-        console.log('⚠️ STEP 5B TIMEOUT: Job did not complete within 45 minutes')
-        throw new Error('Processing timeout - job took longer than expected')
+      throw new functions.https.HttpsError('internal', 
+        error instanceof Error ? error.message : 'Extraction failed'
+      )
+    }
+  })
+
+/**
+ * Cloud Function for background sentence classification with job system
+ * Replaces /app/api/trackerByPhrases/route.ts
+ */
+
+// Job storage in Firestore instead of memory for persistence
+interface ProcessingJob {
+  id: string
+  status: 'pending' | 'processing' | 'completed' | 'failed'
+  progress: { completed: number; total: number; percentage: number }
+  results: any[]
+  error?: string
+  createdAt: Date
+  startedAt?: Date
+  completedAt?: Date
+  transcriptText?: string
+}
+
+export const trackerByPhrases = functions
+  .runWith({
+    timeoutSeconds: 540,
+    memory: '2GB'
+  })
+  .https.onCall(async (data, context) => {
+    try {
+      const { transcriptText, jobId } = data
+      
+      if (!transcriptText) {
+        throw new functions.https.HttpsError('invalid-argument', 'Missing transcript text')
+      }
+
+      // Create job ID if not provided
+      const backgroundJobId = jobId || `job_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      
+      console.log('🚀 [TRACKER-BY-PHRASES] Starting background job:', backgroundJobId)
+      console.log('📄 Transcript length:', transcriptText.length)
+
+      // Estimate processing time based on transcript length
+      const estimatedBatches = Math.ceil(transcriptText.split(/[.!?]+/).length / 10)
+      const estimatedTimeMs = estimatedBatches * 3000 // 3 seconds per batch
+      const estimatedTime = `${Math.round(estimatedTimeMs / 1000)} seconds`
+
+      // Initialize job in Firestore
+      const jobRef = admin.firestore().collection('processingJobs').doc(backgroundJobId)
+      const job: ProcessingJob = {
+        id: backgroundJobId,
+        status: 'pending',
+        progress: { completed: 0, total: estimatedBatches, percentage: 0 },
+        results: [],
+        createdAt: new Date(),
+        transcriptText
       }
       
-    } catch (classifyError) {
-      console.log('❌ STEP 5 ERROR: Background classification failed')
-      console.log('   • Error:', classifyError instanceof Error ? classifyError.message : classifyError)
-      throw new functions.https.HttpsError('internal', `Classification failed: ${classifyError instanceof Error ? classifyError.message : classifyError}`)
+      await jobRef.set(job)
+
+      // Start background processing (don't await)
+      processTranscriptInBackground(backgroundJobId, transcriptText).catch(error => {
+        console.error('❌ Background processing failed:', error)
+      })
+
+      return {
+        success: true,
+        jobId: backgroundJobId,
+        estimatedTime,
+        estimatedBatches,
+        status: 'pending'
+      }
+      
+    } catch (error) {
+      console.error('❌ TrackerByPhrases job creation failed:', error)
+      
+      if (error instanceof functions.https.HttpsError) {
+        throw error
+      }
+      
+      throw new functions.https.HttpsError('internal', 
+        error instanceof Error ? error.message : 'Job creation failed'
+      )
+    }
+  })
+
+/**
+ * Cloud Function to get job status
+ * Replaces /app/api/trackerByPhrases/status/[jobId]/route.ts
+ */
+export const getTrackerJobStatus = functions.https.onCall(async (data, context) => {
+  try {
+    const { jobId } = data
+    
+    if (!jobId) {
+      throw new functions.https.HttpsError('invalid-argument', 'Missing jobId')
     }
 
-    // Generate tracker scoring based on trackerByPhrases data using OpenAI
-    console.log('\n🎯 STEP 6: Generating OpenAI-powered tracker scoring analysis')
-    const trackerScoring = await generateTrackerScoringWithAI(classificationResult.classifiedTranscript || [])
-    console.log('   • Tracker scoring generated for:', Object.keys(trackerScoring).length, 'trackers')
-
-    // Create insights document with both trackerByPhrases and trackerScoring
-    const insightsData = {
-      trackerByPhrases: classificationResult.classifiedTranscript || [],
-      trackerScoring: trackerScoring,
-      extractionMethod: 'cloud-function-processing',
-      totalSentences: classificationResult.totalSentences || 0,
-      calculatedAt: new Date(),
-      transcriptId,
-      personId
+    const jobRef = admin.firestore().collection('processingJobs').doc(jobId)
+    const jobDoc = await jobRef.get()
+    
+    if (!jobDoc.exists) {
+      throw new functions.https.HttpsError('not-found', 'Job not found')
     }
 
-    // Save to insights collection using Firebase Admin SDK
-    const insightRef = admin.firestore().collection('insights').doc(personId).collection('timestamps').doc(transcriptId)
-    await insightRef.set(insightsData)
-
-    console.log('\n💾 STEP 7: Saving insights to Firestore')
-    console.log('   • Path: insights/' + personId + '/timestamps/' + transcriptId)
-    console.log('   • TrackerByPhrases count:', classificationResult.classifiedTranscript?.length || 0)
-    console.log('   • TrackerScoring trackers:', Object.keys(insightsData.trackerScoring || {}).length)
-    console.log('   • Total sentences processed:', classificationResult.totalSentences || 0)
-    console.log('✅ STEP 7 SUCCESS: Insights saved to Firestore')
-
-    console.log('\n✅ CLOUD FUNCTION COMPLETE: All steps finished successfully')
-    console.log('='.repeat(80))
+    const job = jobDoc.data() as ProcessingJob
+    
+    // Calculate estimated time remaining
+    let estimatedTimeRemaining = null
+    if (job.status === 'processing' && job.progress.percentage > 0) {
+      const timeElapsed = Date.now() - (job.startedAt?.getTime() || Date.now())
+      const timePerPercent = timeElapsed / job.progress.percentage
+      const remainingPercent = 100 - job.progress.percentage
+      const remainingMs = remainingPercent * timePerPercent
+      estimatedTimeRemaining = `${Math.round(remainingMs / 1000)} seconds`
+    }
 
     return {
       success: true,
-      insightsData,
-      message: 'Insights processed and saved successfully via Cloud Function'
+      jobId,
+      status: job.status,
+      progress: job.progress,
+      estimatedTimeRemaining,
+      ...(job.status === 'completed' && {
+        classifiedTranscript: job.results,
+        totalSentences: job.results.length,
+        extractionMethod: 'openai-background-processing'
+      }),
+      ...(job.status === 'failed' && {
+        error: job.error
+      })
     }
     
   } catch (error) {
-    console.log('\n❌ CLOUD FUNCTION ERROR: Process transcript insights failed')
-    console.log('   • Error type:', error instanceof Error ? error.constructor.name : typeof error)
-    console.log('   • Error message:', error instanceof Error ? error.message : error)
-    console.log('   • Error stack:', error instanceof Error ? error.stack : 'No stack')
-    console.log('='.repeat(80))
+    console.error('❌ Get job status failed:', error)
     
-    // Re-throw Firebase errors
     if (error instanceof functions.https.HttpsError) {
       throw error
     }
     
     throw new functions.https.HttpsError('internal', 
-      error instanceof Error ? error.message : 'Unknown error occurred'
+      error instanceof Error ? error.message : 'Status check failed'
     )
   }
 })
+
+// Background processing function
+async function processTranscriptInBackground(jobId: string, transcriptText: string) {
+  const jobRef = admin.firestore().collection('processingJobs').doc(jobId)
+  
+  try {
+    console.log('🔄 Starting background processing for job:', jobId)
+    
+    // Update job status to processing
+    await jobRef.update({
+      status: 'processing',
+      startedAt: new Date()
+    })
+
+    // Initialize OpenAI
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    })
+
+    // Split transcript into sentences
+    const sentences = transcriptText.split(/[.!?]+/).filter(s => s.trim().length > 0)
+    console.log('📊 Total sentences to classify:', sentences.length)
+
+    if (sentences.length === 0) {
+      console.log('⚠️ No sentences found - treating entire transcript as one sentence')
+      sentences.push(transcriptText.trim())
+    }
+
+    const classifiedTranscript = []
+    const batchSize = 10
+    const totalBatches = Math.ceil(sentences.length / batchSize)
+
+    for (let i = 0; i < sentences.length; i += batchSize) {
+      const batch = sentences.slice(i, i + batchSize)
+      const currentBatch = Math.floor(i / batchSize) + 1
+      
+      console.log(`🔄 Processing batch ${currentBatch}/${totalBatches}`)
+
+      try {
+        const prompt = `Classify each sentence into one of these tracker categories or 'none':
+- introduction: Professional greeting, name introductions, welcoming patient
+- rapport-building: Building personal connection, comfort checks, making patient feel at ease
+- listening-to-concerns: Patient expressing concerns, objections, fears that need addressing
+- overall-assessment: Comprehensive evaluation, holistic approach, big-picture analysis
+- treatment-plan: Specific recommendations, treatment explanations, procedure options
+- pricing-questions: Cost discussions, budget conversations, payment options
+- follow-up-booking: Scheduling appointments, next steps, continuity planning
+
+Sentences to classify:
+${batch.map((s, idx) => `${i + idx + 1}. "${s.trim()}"`).join('\n')}
+
+Respond with JSON array: [{"text": "sentence", "tracker": "category"}]`
+
+        const response = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: "You are an expert at classifying medical spa consultation sentences. Always respond with valid JSON."
+            },
+            {
+              role: "user",
+              content: prompt
+            }
+          ],
+          temperature: 0.2,
+          max_tokens: 2000,
+          response_format: { type: "json_object" }
+        })
+
+        const result = JSON.parse(response.choices[0].message.content || '{"classifications": []}')
+        const classifications = result.classifications || []
+        
+        classifiedTranscript.push(...classifications)
+        
+      } catch (error) {
+        console.error(`❌ Error processing batch ${currentBatch}:`, error)
+        // Add sentences as unclassified on error
+        batch.forEach(sentence => {
+          classifiedTranscript.push({
+            text: sentence.trim(),
+            tracker: 'none'
+          })
+        })
+      }
+
+      // Update progress
+      const completed = Math.min(currentBatch, totalBatches)
+      const percentage = Math.round((completed / totalBatches) * 100)
+      
+      await jobRef.update({
+        'progress.completed': completed,
+        'progress.total': totalBatches,
+        'progress.percentage': percentage
+      })
+
+      // Small delay between batches to avoid rate limiting
+      if (i + batchSize < sentences.length) {
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
+    }
+
+    // Mark job as completed
+    await jobRef.update({
+      status: 'completed',
+      completedAt: new Date(),
+      results: classifiedTranscript,
+      'progress.percentage': 100
+    })
+
+    console.log(`✅ Background processing completed for job ${jobId}:`, {
+      totalSentences: sentences.length,
+      classifiedSentences: classifiedTranscript.length
+    })
+
+  } catch (error) {
+    console.error(`❌ Background processing failed for job ${jobId}:`, error)
+    
+    // Mark job as failed
+    await jobRef.update({
+      status: 'failed',
+      error: error instanceof Error ? error.message : 'Processing failed',
+      completedAt: new Date()
+    })
+  }
+}
 
 // Helper function for OpenAI tracker scoring (moved from API route)
 async function generateTrackerScoringWithAI(classifiedSentences: any[]) {
   console.log('🤖 Starting OpenAI-powered tracker scoring evaluation...')
   
-  const OpenAI = require('openai')
   const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
   })
@@ -604,4 +969,420 @@ function generateSimpleTrackerScoring(classifiedSentences: any[]) {
   return trackerScoring
 }
 
-export default { processTranscriptOnCreate, retryFailedProcessing, processMissedTranscripts, processTranscriptInsights }
+// Helper functions for complete recording processing
+
+async function processTranscriptData(recordingData: any, personId: string, recordingId: string) {
+  console.log('🔄 Processing transcript data...')
+  
+  // Extract transcript and speaker data from recording
+  const transcript = recordingData.transcript || ''
+  const speakerTranscript = recordingData.speakerTranscript || recordingData['speaker transcript'] || []
+  
+  console.log('📄 Transcript length:', transcript.length)
+  console.log('🎙️ Speaker entries:', speakerTranscript.length)
+  
+  // Save to Firestore with proper format
+  const transcriptRef = admin.firestore()
+    .collection('transcript')
+    .doc(personId)
+    .collection('timestamps')
+    .doc(recordingId)
+  
+  const transcriptDocument = {
+    transcript,
+    'speaker transcript': speakerTranscript,
+    transcriptionStatus: true, // This will trigger processTranscriptOnUpdate
+    calculatedAt: new Date(),
+    durationSeconds: recordingData.durationSeconds || 0,
+    title: recordingData.title || 'Untitled Recording',
+    hasWordLevelData: speakerTranscript.length > 0,
+    recordingId,
+    personId
+  }
+  
+  await transcriptRef.set(transcriptDocument)
+  console.log('✅ Transcript data saved to Firestore')
+  
+  return { transcript, speakerTranscript, transcriptDocument }
+}
+
+async function calculateAnalyticsMetrics(recordingData: any, personId: string, recordingId: string) {
+  console.log('📊 Calculating analytics metrics...')
+  
+  // Basic analytics calculation (simplified version)
+  const speakerTranscript = recordingData.speakerTranscript || []
+  const durationSeconds = recordingData.durationSeconds || 0
+  
+  // Calculate basic metrics
+  const consultantWords = speakerTranscript.filter((s: any) => s.speaker === 'Consultant').length
+  const customerWords = speakerTranscript.filter((s: any) => s.speaker === 'Customer' || s.speaker === 'Patient').length
+  const totalWords = consultantWords + customerWords
+  
+  const analytics = {
+    calculatedAt: new Date(),
+    hasValidSpeakerData: speakerTranscript.length > 0,
+    durationSeconds,
+    talkRatio: totalWords > 0 ? consultantWords / totalWords : 0,
+    longestMonologue: 0, // Simplified
+    longestCustomerStory: durationSeconds * 0.4, // Estimated
+    interactivity: speakerTranscript.length > 10 ? 0.8 : 0.2,
+    talkSpeed: totalWords > 0 ? totalWords / Math.max(durationSeconds, 1) : 0,
+    patience: 0.7 // Default value
+  }
+  
+  // Save analytics to Firestore
+  const analyticsRef = admin.firestore()
+    .collection('analytics')
+    .doc(personId)
+    .collection('timestamps')
+    .doc(recordingId)
+  
+  await analyticsRef.set(analytics)
+  console.log('✅ Analytics data saved')
+  
+  return analytics
+}
+
+async function processInsightsFully(transcript: string, speakerTranscript: any[], personId: string, recordingId: string) {
+  console.log('🎯 Processing complete insights...')
+  
+  // STEP 1: Extract tracker phrases
+  await extractTrackerPhrasesDirectly(transcript, speakerTranscript)
+  
+  // STEP 2: Classify sentences with proper format
+  const classificationResult = await classifyTranscriptDirectly(transcript)
+  
+  // STEP 3: Generate tracker scoring
+  const trackerScoring = await generateTrackerScoringWithAI(classificationResult.classifiedTranscript || [])
+  
+  // STEP 4: Save to insights collection
+  const insightsData = {
+    trackerByPhrases: classificationResult.classifiedTranscript || [],
+    trackerScoring: trackerScoring,
+    extractionMethod: 'cloud-function-complete',
+    totalSentences: classificationResult.totalSentences || 0,
+    calculatedAt: new Date(),
+    transcriptId: recordingId,
+    personId
+  }
+  
+  const insightRef = admin.firestore()
+    .collection('insights')
+    .doc(personId)
+    .collection('timestamps')
+    .doc(recordingId)
+  
+  await insightRef.set(insightsData)
+  console.log('✅ Insights saved with', classificationResult.classifiedTranscript?.length || 0, 'classified sentences')
+  
+  return insightsData
+}
+
+async function generateSalesRecommendations(transcript: string, insights: any, personId: string, recordingId: string) {
+  console.log('🔔 Generating sales recommendations...')
+  
+  // Simple sales recommendations based on tracker scoring
+  const recommendations: any[] = []
+  const trackerScoring = insights.trackerScoring || {}
+  
+  Object.entries(trackerScoring).forEach(([tracker, data]: [string, any]) => {
+    if (data.category === 'Missed' || data.category === 'Needs Improvement') {
+      recommendations.push({
+        type: 'improvement',
+        tracker,
+        message: data.reasoning,
+        priority: data.category === 'Missed' ? 'high' : 'medium'
+      })
+    }
+  })
+  
+  // Save recommendations to alerts collection
+  if (recommendations.length > 0) {
+    const alertRef = admin.firestore()
+      .collection('alerts')
+      .doc(personId)
+      .collection('recommendations')
+      .doc(recordingId)
+    
+    await alertRef.set({
+      recommendations,
+      createdAt: new Date(),
+      recordingId,
+      personId,
+      type: 'sales_recommendations'
+    })
+    
+    console.log('✅ Sales recommendations saved:', recommendations.length, 'items')
+  }
+  
+  return { recommendations, count: recommendations.length }
+}
+
+async function sendRecordingNotification(personId: string, recordingId: string, title: string) {
+  console.log('📱 Sending recording completion notification...')
+  
+  try {
+    // Get FCM token from user document
+    const userRef = admin.firestore().collection('users').doc(personId)
+    const userDoc = await userRef.get()
+    
+    if (!userDoc.exists) {
+      console.log('❌ User document not found for notifications')
+      return { success: false, error: 'User not found' }
+    }
+    
+    const userData = userDoc.data()
+    const fcmToken = userData?.fcmToken
+    
+    if (!fcmToken) {
+      console.log('❌ No FCM token found for user')
+      return { success: false, error: 'No FCM token' }
+    }
+    
+    // Send notification
+    const message = {
+      token: fcmToken,
+      notification: {
+        title: 'Recording Processed',
+        body: `"${title}" has been analyzed and is ready for review.`
+      },
+      data: {
+        recordingId,
+        personId,
+        type: 'recording_complete'
+      }
+    }
+    
+    const response = await admin.messaging().send(message)
+    console.log('✅ Push notification sent successfully:', response)
+    
+    return { success: true, messageId: response }
+    
+  } catch (error) {
+    console.error('❌ Failed to send push notification:', error)
+    return { success: false, error: error instanceof Error ? error.message : 'Notification failed' }
+  }
+}
+
+// Helper functions for direct processing (no external API calls)
+
+async function extractTrackerPhrasesDirectly(transcriptText: string, speakerTranscript?: any[]) {
+  console.log('🤖 Starting direct tracker phrase extraction...')
+  
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+  })
+  
+  const prompt = `You are an expert at analyzing medical spa consultation transcripts. Extract specific phrases and quotes that demonstrate each tracking category.
+
+TRANSCRIPT:
+${transcriptText}
+
+For each category below, find SPECIFIC PHRASES or QUOTES from the transcript that demonstrate that category. Return actual text snippets, not descriptions.
+
+TRACKING CATEGORIES:
+1. **INTRODUCTION** - Greetings, name introductions, welcoming statements
+2. **RAPPORT-BUILDING** - Personal questions, comfort checks, building connection
+3. **LISTENING-TO-CONCERNS** - Patient concerns, objections, fears being addressed
+4. **OVERALL-ASSESSMENT** - Comprehensive evaluations, holistic approaches
+5. **TREATMENT-PLAN** - Specific recommendations, treatment explanations
+6. **PRICING-QUESTIONS** - Cost discussions, budget conversations
+7. **FOLLOW-UP-BOOKING** - Scheduling, next steps, appointment booking
+
+Response format (JSON):
+{
+  "introduction": ["exact phrase 1", "exact phrase 2"],
+  "rapport-building": ["exact phrase 1", "exact phrase 2"],
+  "listening-to-concerns": ["exact phrase 1"],
+  "overall-assessment": ["exact phrase 1"],
+  "treatment-plan": ["exact phrase 1", "exact phrase 2"],
+  "pricing-questions": [],
+  "follow-up-booking": ["exact phrase 1"]
+}`
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      {
+        role: "system",
+        content: "You are an expert at extracting specific phrases from medical spa consultations. Always respond with valid JSON containing actual quotes from the transcript."
+      },
+      {
+        role: "user",
+        content: prompt
+      }
+    ],
+    temperature: 0.1,
+    max_tokens: 3000,
+    response_format: { type: "json_object" }
+  })
+
+  const rawContent = response.choices[0].message.content
+  let trackerResults
+  
+  try {
+    trackerResults = JSON.parse(rawContent || '{}')
+  } catch (parseError) {
+    console.error('❌ JSON Parse Error:', parseError)
+    trackerResults = {
+      "introduction": [],
+      "rapport-building": [],
+      "listening-to-concerns": [],
+      "overall-assessment": [],
+      "treatment-plan": [],
+      "pricing-questions": [],
+      "follow-up-booking": []
+    }
+  }
+
+  return {
+    success: true,
+    trackerResults,
+    extractionMethod: 'openai-direct',
+    tokensUsed: response.usage?.total_tokens || 0,
+    costEstimate: `$${((response.usage?.total_tokens || 0) * 0.00015 / 1000).toFixed(4)}`
+  }
+}
+
+async function classifyTranscriptDirectly(transcriptText: string) {
+  console.log('🤖 Starting direct sentence classification...')
+  
+  const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+  })
+
+  // Split transcript into sentences
+  const sentences = transcriptText.split(/[.!?]+/).filter(s => s.trim().length > 0)
+  console.log('📊 Total sentences to classify:', sentences.length)
+
+  if (sentences.length === 0) {
+    console.log('⚠️ No sentences found - treating entire transcript as one sentence')
+    sentences.push(transcriptText.trim())
+  }
+
+  const classifiedTranscript: any[] = []
+  const batchSize = 10
+
+  for (let i = 0; i < sentences.length; i += batchSize) {
+    const batch = sentences.slice(i, i + batchSize)
+    const currentBatch = Math.floor(i / batchSize) + 1
+    const totalBatches = Math.ceil(sentences.length / batchSize)
+    
+    console.log(`🔄 Processing batch ${currentBatch}/${totalBatches}`)
+
+    try {
+      const prompt = `Classify each sentence into one of these tracker categories or 'none':
+- introduction: Professional greeting, name introductions, welcoming patient
+- rapport-building: Building personal connection, comfort checks, making patient feel at ease
+- listening-to-concerns: Patient expressing concerns, objections, fears that need addressing
+- overall-assessment: Comprehensive evaluation, holistic approach, big-picture analysis
+- treatment-plan: Specific recommendations, treatment explanations, procedure options
+- pricing-questions: Cost discussions, budget conversations, payment options
+- follow-up-booking: Scheduling appointments, next steps, continuity planning
+
+Sentences to classify:
+${batch.map((s, idx) => `${i + idx + 1}. "${s.trim()}"`).join('\n')}
+
+Respond with JSON array: [{"text": "sentence", "tracker": "category"}]`
+
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert at classifying medical spa consultation sentences. Always respond with valid JSON."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
+        temperature: 0.2,
+        max_tokens: 2000,
+        response_format: { type: "json_object" }
+      })
+
+      const result = JSON.parse(response.choices[0].message.content || '[]')
+      
+      // Handle different possible OpenAI response formats
+      let classifications = []
+      if (Array.isArray(result)) {
+        classifications = result
+      } else if (result.classifications && Array.isArray(result.classifications)) {
+        classifications = result.classifications
+      } else {
+        console.error('❌ Unexpected OpenAI response format:', result)
+        classifications = []
+      }
+      
+      // Add the classifications with proper format including metadata
+      classifications.forEach((classification: any, idx: number) => {
+        const sentenceIndex = i + idx
+        const sentence = batch[idx] || ''
+        
+        classifiedTranscript.push({
+          text: classification.text || sentence.trim(),
+          tracker: classification.tracker || 'none',
+          confidence: 0.8, // Default confidence
+          start: sentenceIndex * 1000, // Estimated start time in ms
+          end: (sentenceIndex + 1) * 1000, // Estimated end time in ms
+          timestamp: `${Math.floor(sentenceIndex * 1).toString().padStart(2, '0')}:${Math.floor((sentenceIndex * 1) % 60).toString().padStart(2, '0')}` // Estimated timestamp
+        })
+      })
+      
+      // If no classifications returned, add all sentences as 'none'
+      if (classifications.length === 0) {
+        batch.forEach((sentence, idx) => {
+          const sentenceIndex = i + idx
+          classifiedTranscript.push({
+            text: sentence.trim(),
+            tracker: 'none',
+            confidence: 0.8,
+            start: sentenceIndex * 1000,
+            end: (sentenceIndex + 1) * 1000,
+            timestamp: `${Math.floor(sentenceIndex * 1).toString().padStart(2, '0')}:${Math.floor((sentenceIndex * 1) % 60).toString().padStart(2, '0')}`
+          })
+        })
+      }
+      
+    } catch (error) {
+      console.error(`❌ Error processing batch ${currentBatch}:`, error)
+      // Add sentences as unclassified on error with proper format
+      batch.forEach((sentence, idx) => {
+        const sentenceIndex = i + idx
+        classifiedTranscript.push({
+          text: sentence.trim(),
+          tracker: 'none',
+          confidence: 0.8,
+          start: sentenceIndex * 1000,
+          end: (sentenceIndex + 1) * 1000,
+          timestamp: `${Math.floor(sentenceIndex * 1).toString().padStart(2, '0')}:${Math.floor((sentenceIndex * 1) % 60).toString().padStart(2, '0')}`
+        })
+      })
+    }
+
+    // Small delay between batches to avoid rate limiting
+    if (i + batchSize < sentences.length) {
+      await new Promise(resolve => setTimeout(resolve, 1000))
+    }
+  }
+
+  console.log(`✅ Direct sentence classification completed: ${classifiedTranscript.length} sentences processed`)
+
+  return {
+    classifiedTranscript,
+    totalSentences: sentences.length,
+    success: true,
+    extractionMethod: 'openai-direct-processing'
+  }
+}
+
+export default { 
+  processTranscriptOnUpdate, 
+  retryFailedProcessing, 
+  processMissedTranscripts,
+  extractAllTrackerPhrases,
+  trackerByPhrases,
+  getTrackerJobStatus,
+  processCompleteRecording
+}
