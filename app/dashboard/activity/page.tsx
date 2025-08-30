@@ -220,6 +220,13 @@ export default function Dashboard() {
     setHasMoreData(filteredTimestampData.length > itemsPerPage)
   }, [filteredTimestampData, selectedLocationFilter, selectedUserFilter])
   
+  // Load comments when transcript modal is opened
+  useEffect(() => {
+    if (showTranscriptModal && selectedTranscript) {
+      loadExistingComments()
+    }
+  }, [showTranscriptModal, selectedTranscript])
+  
   // Sign out function
   const handleSignOut = async () => {
     try {
@@ -1449,7 +1456,7 @@ export default function Dashboard() {
       setHighlightedText(null)
       
       // Reload comments to show the new one
-      loadExistingComments(transcriptDocumentId)
+      loadExistingComments()
       
     } catch (error) {
       console.error('❌ Error saving comment:', error)
@@ -2349,7 +2356,7 @@ export default function Dashboard() {
           // Open the transcript modal with comments popup
           setSelectedTranscript(transcriptObject)
           setShowTranscriptModal(true)
-          loadExistingComments(documentId)
+          loadExistingComments()
           
           // Auto-highlight the clicked phrase
           setTimeout(() => {

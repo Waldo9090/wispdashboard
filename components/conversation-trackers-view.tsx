@@ -98,6 +98,13 @@ export function ConversationTrackersView() {
     loadTrackersData();
   }, []);
   
+  // Load comments when notes modal is opened
+  useEffect(() => {
+    if (showNotesModal && selectedPhrase) {
+      loadExistingComments();
+    }
+  }, [showNotesModal, selectedPhrase]);
+  
   // Process clusters when tracker data changes
   useEffect(() => {
     if (trackersData?.sentences) {
@@ -478,7 +485,7 @@ export function ConversationTrackersView() {
       await setDoc(alertsRef, { alerts: existingAlerts }, { merge: true });
       
       setComment('');
-      loadExistingComments(selectedPhrase.rep_id);
+      loadExistingComments();
       
     } catch (error) {
       console.error('Error saving comment:', error);
@@ -580,7 +587,7 @@ export function ConversationTrackersView() {
     setSelectedPhrase(phrase);
     setShowNotesModal(true);
     setShowFullStatsModal(false);
-    loadExistingComments(phrase.rep_id);
+            loadExistingComments();
   };
 
   return (
@@ -893,7 +900,7 @@ export function ConversationTrackersView() {
                                 onClick={() => {
                                   setSelectedPhrase(phrase);
                                   setShowNotesModal(true);
-                                  loadExistingComments(phrase.rep_id);
+                                  loadExistingComments();
                                 }}
                               >
                                 <div className="text-sm text-gray-800">
