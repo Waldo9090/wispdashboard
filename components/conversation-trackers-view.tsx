@@ -479,6 +479,9 @@ export function ConversationTrackersView() {
       if (alertsSnap.exists()) {
         const data = alertsSnap.data();
         existingAlerts = data.alerts || [];
+        console.log(`🔍 Found ${existingAlerts.length} existing alerts for rep_id: ${selectedPhrase.rep_id}`);
+      } else {
+        console.log(`📄 No alerts document found for rep_id: ${selectedPhrase.rep_id}`);
       }
       
       existingAlerts.push(alertDoc);

@@ -614,7 +614,7 @@ export default function Dashboard() {
     
     try {
       setLoadingComments(true)
-      //console.log(`🔍 Loading existing alerts and comments for recording owner deviceID: ${transcriptDocumentId}`)
+      console.log(`🔍 Loading existing alerts and comments for recording owner deviceID: ${transcriptDocumentId}`)
       
       const alertsRef = doc(db, 'alerts', transcriptDocumentId)
       const alertsSnap = await getDoc(alertsRef)
@@ -635,8 +635,8 @@ export default function Dashboard() {
             return timeB.getTime() - timeA.getTime()
           })
         
-        //console.log(`✅ Found ${allAlerts.length} existing alerts and comments`)
-        //console.log('Alert types:', allAlerts.map((a: any) => a.type || 'untyped'))
+        console.log(`✅ Found ${allAlerts.length} existing alerts and comments`)
+        console.log('Alert types:', allAlerts.map((a: any) => a.type || 'untyped'))
         setExistingComments(allAlerts)
       } else {
         //console.log('📄 No alerts document found for this transcript')
