@@ -471,6 +471,7 @@ export function ConversationTrackersView() {
         lastUpdated: new Date()
       };
       
+      console.log(`🎯 Using rep_id for alerts: ${selectedPhrase.rep_id}`);
       const alertsRef = doc(db, 'alerts', selectedPhrase.rep_id);
       const alertsSnap = await getDoc(alertsRef);
       
@@ -483,6 +484,7 @@ export function ConversationTrackersView() {
       existingAlerts.push(alertDoc);
       
       await setDoc(alertsRef, { alerts: existingAlerts }, { merge: true });
+      console.log(`✅ Comment saved to /alerts/${selectedPhrase.rep_id}`);
       
       setComment('');
       loadExistingComments();

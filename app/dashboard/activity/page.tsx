@@ -1398,7 +1398,7 @@ export default function Dashboard() {
         transcriptDocumentId = foundDocumentId
       }
       
-      //console.log(`🎯 Using transcript document ID: ${transcriptDocumentId}`)
+      console.log(`🎯 Using transcript document ID: ${transcriptDocumentId}`)
       
       // Generate unique alert ID
       const alertId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
@@ -1448,8 +1448,8 @@ export default function Dashboard() {
       // Save back to Firestore
       await setDoc(alertsRef, { alerts: existingAlerts }, { merge: true })
       
-      //console.log('✅ Comment saved successfully!')
-      //console.log(`📍 Saved to /alerts/${transcriptDocumentId}`)
+      console.log('✅ Comment saved successfully!')
+      console.log(`📍 Saved to /alerts/${transcriptDocumentId}`)
 
       // Clear form
       setComment('')
