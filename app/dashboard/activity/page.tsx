@@ -1342,7 +1342,7 @@ export default function Dashboard() {
 
   // Function to save comment to alerts collection
   const saveComment = async () => {
-    console.log('🔍 saveComment called with:', {
+    const debugData = {
       hasComment: !!comment.trim(),
       hasHighlightedText: !!highlightedText,
       hasSelectedTranscript: !!selectedTranscript,
@@ -1350,8 +1350,22 @@ export default function Dashboard() {
       comment: comment.trim(),
       highlightedText,
       selectedTranscript: selectedTranscript?.id,
-      user: user?.email
-    })
+      user: user?.email,
+      timestamp: new Date().toISOString()
+    }
+    
+    console.log('🔍 saveComment called with:', debugData)
+    
+    // Send debug data to terminal via API
+    try {
+      await fetch('/api/debug-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(debugData)
+      })
+    } catch (error) {
+      console.error('❌ Failed to send debug log:', error)
+    }
     
     if (!comment.trim() || !highlightedText || !selectedTranscript || !user) {
       console.log('❌ Missing required data for comment saving')
@@ -2994,6 +3008,7 @@ export default function Dashboard() {
                   <div className="flex gap-3">
                     <button
                       onClick={() => {
+                        alert('🔘 Save button clicked!')
                         console.log('🔘 Save button clicked!')
                         console.log('🔍 Button state:', {
                           hasComment: !!comment.trim(),
