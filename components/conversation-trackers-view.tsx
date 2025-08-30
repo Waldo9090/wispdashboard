@@ -396,12 +396,12 @@ export function ConversationTrackersView() {
   
   // Load existing comments for a phrase
   const loadExistingComments = async (repId: string) => {
-    if (!repId) return;
+    if (!user?.email) return;
     
     try {
       setLoadingComments(true);
       
-      const alertsRef = doc(db, 'alerts', repId);
+      const alertsRef = doc(db, 'alerts', user.email);
       const alertsSnap = await getDoc(alertsRef);
       
       if (alertsSnap.exists()) {
@@ -457,14 +457,14 @@ export function ConversationTrackersView() {
           transcriptName: getCustomerDisplayName(selectedPhrase.rep_id),
           audioURL: ''
         }],
-        type: "trackers_comment",
+        type: "warning",
         source: "TRACKERS_TAB",
         userEmail: user.email || 'unknown',
         userName: user.displayName || 'Unknown User',
         lastUpdated: new Date()
       };
       
-      const alertsRef = doc(db, 'alerts', selectedPhrase.rep_id);
+      const alertsRef = doc(db, 'alerts', user.email || 'unknown');
       const alertsSnap = await getDoc(alertsRef);
       
       let existingAlerts = [];

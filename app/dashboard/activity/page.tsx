@@ -603,13 +603,13 @@ export default function Dashboard() {
 
   // Function to load existing comments and alerts from alerts collection
   const loadExistingComments = async (transcriptDocumentId?: string) => {
-    if (!transcriptDocumentId) return
+    if (!user?.email) return
     
     try {
       setLoadingComments(true)
-      //console.log(`🔍 Loading existing alerts and comments for document: ${transcriptDocumentId}`)
+      //console.log(`🔍 Loading existing alerts and comments for user: ${user.email}`)
       
-      const alertsRef = doc(db, 'alerts', transcriptDocumentId)
+      const alertsRef = doc(db, 'alerts', user.email)
       const alertsSnap = await getDoc(alertsRef)
       
       if (alertsSnap.exists()) {
@@ -1418,15 +1418,15 @@ export default function Dashboard() {
           transcriptName: selectedTranscript.name,
           audioURL: selectedTranscript.audioURL || ''
         }],
-        type: isTrackersComment ? "trackers_comment" : "warning",
+        type: "warning",
         source: isTrackersComment ? "TRACKERS_TAB" : "DIRECT_SELECTION",
         userEmail: user.email || 'unknown',
         userName: user.displayName || 'Unknown User',
         lastUpdated: new Date()
       }
 
-      // Save to alerts using the transcript document ID instead of user.uid
-      const alertsRef = doc(db, 'alerts', transcriptDocumentId)
+      // Save to alerts using the user email as document ID (matching Firestore console structure)
+      const alertsRef = doc(db, 'alerts', user.email || 'unknown')
       const alertsSnap = await getDoc(alertsRef)
       
       let existingAlerts = []
