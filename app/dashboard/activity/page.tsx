@@ -1342,14 +1342,25 @@ export default function Dashboard() {
 
   // Function to save comment to alerts collection
   const saveComment = async () => {
+    console.log('🔍 saveComment called with:', {
+      hasComment: !!comment.trim(),
+      hasHighlightedText: !!highlightedText,
+      hasSelectedTranscript: !!selectedTranscript,
+      hasUser: !!user,
+      comment: comment.trim(),
+      highlightedText,
+      selectedTranscript: selectedTranscript?.id,
+      user: user?.email
+    })
+    
     if (!comment.trim() || !highlightedText || !selectedTranscript || !user) {
-      //console.log('❌ Missing required data for comment saving')
+      console.log('❌ Missing required data for comment saving')
       return
     }
 
     try {
       setSavingComment(true)
-      //console.log('💾 Saving comment to alerts collection...')
+      console.log('💾 Starting to save comment to alerts collection...')
       //console.log('🔍 Selected transcript object:', {
 
       
