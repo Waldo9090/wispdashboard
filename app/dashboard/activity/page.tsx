@@ -223,7 +223,7 @@ export default function Dashboard() {
   // Load comments when transcript modal is opened
   useEffect(() => {
     if (showTranscriptModal && selectedTranscript) {
-      loadExistingComments()
+      loadExistingComments(selectedTranscript.transcriptDocumentId)
     }
   }, [showTranscriptModal, selectedTranscript])
   
@@ -610,13 +610,13 @@ export default function Dashboard() {
 
   // Function to load existing comments and alerts from alerts collection
   const loadExistingComments = async (transcriptDocumentId?: string) => {
-    if (!user?.uid) return
+    if (!transcriptDocumentId) return
     
     try {
       setLoadingComments(true)
-      //console.log(`🔍 Loading existing alerts and comments for user deviceID: ${user.uid}`)
+      //console.log(`🔍 Loading existing alerts and comments for recording owner deviceID: ${transcriptDocumentId}`)
       
-      const alertsRef = doc(db, 'alerts', user.uid)
+      const alertsRef = doc(db, 'alerts', transcriptDocumentId)
       const alertsSnap = await getDoc(alertsRef)
       
       if (alertsSnap.exists()) {
@@ -1432,8 +1432,8 @@ export default function Dashboard() {
         lastUpdated: new Date()
       }
 
-      // Save to alerts using the user's deviceID (Firebase UID) as document ID
-      const alertsRef = doc(db, 'alerts', user.uid || 'unknown')
+      // Save to alerts using the recording owner's deviceID (transcriptDocumentId) as document ID
+      const alertsRef = doc(db, 'alerts', transcriptDocumentId)
       const alertsSnap = await getDoc(alertsRef)
       
       let existingAlerts = []
@@ -1456,7 +1456,7 @@ export default function Dashboard() {
       setHighlightedText(null)
       
       // Reload comments to show the new one
-      loadExistingComments()
+      loadExistingComments(transcriptDocumentId)
       
     } catch (error) {
       console.error('❌ Error saving comment:', error)
@@ -2356,7 +2356,7 @@ export default function Dashboard() {
           // Open the transcript modal with comments popup
           setSelectedTranscript(transcriptObject)
           setShowTranscriptModal(true)
-          loadExistingComments()
+          loadExistingComments(documentId)
           
           // Auto-highlight the clicked phrase
           setTimeout(() => {
