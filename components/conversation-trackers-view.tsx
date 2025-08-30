@@ -403,12 +403,12 @@ export function ConversationTrackersView() {
   
   // Load existing comments for a phrase
   const loadExistingComments = async (repId: string) => {
-    if (!user?.email) return;
+    if (!user?.uid) return;
     
     try {
       setLoadingComments(true);
       
-      const alertsRef = doc(db, 'alerts', user.email);
+      const alertsRef = doc(db, 'alerts', user.uid);
       const alertsSnap = await getDoc(alertsRef);
       
       if (alertsSnap.exists()) {
@@ -471,7 +471,7 @@ export function ConversationTrackersView() {
         lastUpdated: new Date()
       };
       
-      const alertsRef = doc(db, 'alerts', user.email || 'unknown');
+      const alertsRef = doc(db, 'alerts', user.uid || 'unknown');
       const alertsSnap = await getDoc(alertsRef);
       
       let existingAlerts = [];

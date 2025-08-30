@@ -610,13 +610,13 @@ export default function Dashboard() {
 
   // Function to load existing comments and alerts from alerts collection
   const loadExistingComments = async (transcriptDocumentId?: string) => {
-    if (!user?.email) return
+    if (!user?.uid) return
     
     try {
       setLoadingComments(true)
-      //console.log(`🔍 Loading existing alerts and comments for user: ${user.email}`)
+      //console.log(`🔍 Loading existing alerts and comments for user deviceID: ${user.uid}`)
       
-      const alertsRef = doc(db, 'alerts', user.email)
+      const alertsRef = doc(db, 'alerts', user.uid)
       const alertsSnap = await getDoc(alertsRef)
       
       if (alertsSnap.exists()) {
@@ -1432,8 +1432,8 @@ export default function Dashboard() {
         lastUpdated: new Date()
       }
 
-      // Save to alerts using the user email as document ID (matching Firestore console structure)
-      const alertsRef = doc(db, 'alerts', user.email || 'unknown')
+      // Save to alerts using the user's deviceID (Firebase UID) as document ID
+      const alertsRef = doc(db, 'alerts', user.uid || 'unknown')
       const alertsSnap = await getDoc(alertsRef)
       
       let existingAlerts = []
