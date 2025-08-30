@@ -2993,7 +2993,17 @@ export default function Dashboard() {
 
                   <div className="flex gap-3">
                     <button
-                      onClick={saveComment}
+                      onClick={() => {
+                        console.log('🔘 Save button clicked!')
+                        console.log('🔍 Button state:', {
+                          hasComment: !!comment.trim(),
+                          hasHighlightedText: !!highlightedText,
+                          isSaving: savingComment,
+                          comment: comment.trim(),
+                          highlightedText
+                        })
+                        saveComment()
+                      }}
                       disabled={!comment.trim() || !highlightedText || savingComment}
                       className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                         !comment.trim() || !highlightedText || savingComment
