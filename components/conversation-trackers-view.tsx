@@ -784,8 +784,10 @@ export function ConversationTrackersView() {
                             phraseCount: data.count
                           }))
                           .sort((a, b) => b.phraseCount - a.phraseCount);
-                        
-                        setClusterPeople(peopleList);
+                        // Filter out blocked names
+                        const BLOCKED_NAMES = new Set(['aditya mahna', 'ayush mahna']);
+                        const filteredPeopleList = peopleList.filter(p => !BLOCKED_NAMES.has(p.name.toLowerCase()));
+                        setClusterPeople(filteredPeopleList);
                       }}
                     >
                       <div className="flex items-center justify-between mb-2">
