@@ -156,7 +156,7 @@ return (
                 <h3 className="text-2xl font-bold">Analyze</h3>
               </div>
               <p className="text-text-dark-muted">
-                Candytrail&apos;s AI reviews each visit and provides clear coaching and follow‑ups.
+                Candytrail&apos;s AI reviews each visit and provides clear coaching.
               </p>
               <div className="w-full h-1 bg-accent-pink mt-4" />
             </div>

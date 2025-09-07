@@ -344,7 +344,7 @@ export function InteractiveSalesCoachingSection() {
           </div>
           <div className="bg-card-dark-bg rounded-xl p-6 shadow border border-white/10">
             <div className="text-5xl md:text-6xl font-extrabold text-white">12%</div>
-            <p className="mt-8 text-text-dark-muted">Average increase in ticket size with Candytrail.</p>
+            <p className="mt-8 text-text-dark-muted">Average increase in ticket size with Candytrail across field teams.</p>
             <div className="mt-6 h-1 bg-primary-pink rounded-full"></div>
           </div>
         </div>
