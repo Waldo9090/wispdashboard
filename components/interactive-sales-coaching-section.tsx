@@ -10,10 +10,6 @@ const ClarityVisual = () => (
       {/* Header */}
       <div className="bg-gray-800 text-white px-6 py-4 flex items-center justify-between">
         <h3 className="text-lg font-bold">Sales Call Dashboard</h3>
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
-          <span className="text-red-500 text-sm font-bold">LIVE</span>
-        </div>
       </div>
       
       <div className="p-6 grid grid-cols-2 gap-6">
@@ -146,9 +142,6 @@ const IntelligenceVisual = () => (
       {/* Header */}
       <div className="bg-gray-800 text-white px-6 py-4 flex items-center justify-between">
         <h3 className="text-lg font-bold">Sales Intelligence Dashboard</h3>
-        <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center animate-pulse">
-          <span className="text-white text-sm">🧠</span>
-        </div>
       </div>
       
       <div className="p-6 grid grid-cols-2 gap-6">
@@ -217,16 +210,8 @@ const IntelligenceVisual = () => (
       <div className="px-6 pb-6">
         <div className="flex items-center justify-between mb-4">
           <h4 className="text-sm font-semibold text-gray-700">Team Performance Trends</h4>
-          <div className="bg-blue-50 border-2 border-dashed border-blue-300 rounded-lg px-3 py-2">
-            <div className="text-blue-600 text-xs font-bold mb-1">LIVE</div>
-            <div className="text-xs text-gray-700">Sarah just closed a</div>
-            <div className="text-green-600 font-bold text-sm">$50K deal!</div>
-          </div>
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4 h-24 flex items-end justify-between relative">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-full h-px bg-gradient-to-r from-green-400 to-pink-400"></div>
-          </div>
+        <div className="bg-white rounded-lg p-4 h-24 flex items-center justify-between">
           <div className="text-xs text-gray-500">Close Rate</div>
           <div className="text-xs text-gray-500">Revenue</div>
         </div>
@@ -246,14 +231,14 @@ interface TabContent {
 const tabData: Record<string, TabContent> = {
   'CLARITY': {
     tag: 'CLARITY',
-    title: 'Hear what your team actually says',
+    title: 'Hear what your team says',
     description: 'Candytrail automatically records and transcribes every sales call—so managers don\'t have to guess what happened. Get full visibility into every rep\'s conversations, from first pitch to close.',
     buttonText: 'Book Demo',
     buttonHref: 'https://calendly.com/adimahna/30min',
   },
   'COACHING': {
     tag: 'COACHING',
-    title: 'Train reps with daily, targeted feedback',
+    title: 'Train reps with daily feedback',
     description: 'Candytrail scores every call and highlights where deals are won or lost. Managers can leave timestamped comments and let reps self-correct—no need to wait for quarterly reviews or shadow sessions.',
     buttonText: 'Book Demo',
     buttonHref: 'https://calendly.com/adimahna/30min',
@@ -270,13 +255,27 @@ const tabData: Record<string, TabContent> = {
 export function InteractiveSalesCoachingSection() {
   const [activeTab, setActiveTab] = useState('CLARITY')
   const currentContent = tabData[activeTab]
+  const imageByTab: Record<string, string> = {
+    CLARITY: "/images/ClarityImage.png",
+    COACHING: "/images/CoachingImage.png",
+    INTELLIGENCE: "/images/IntelligenceImage.png",
+  }
+  const imagePosByTab: Record<string, string> = {
+    CLARITY: "right calc(50% + 12px)",
+    COACHING: "right calc(50% - 5px)",
+    INTELLIGENCE: "right calc(50% - 5px)",
+  }
+  const topMaskHeightByTab: Record<string, string> = {
+    CLARITY: "h-12",
+    COACHING: "h-20",
+    INTELLIGENCE: "h-12",
+  }
 
   return (
     <section className="py-16 md:py-24 lg:py-32 bg-custom-dark-bg text-text-dark-primary">
       <div className="container px-4 md:px-8 lg:px-12 text-center">
         <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-12 text-text-dark-primary">
-          Learn from every conversation. Boost every sale.
-
+          Close more with <span className="text-primary-pink">Candytrail</span>
         </h2>
         <div className="flex justify-center space-x-8 mb-12 text-lg font-semibold">
           {Object.keys(tabData).map((tabName) => (
@@ -315,11 +314,38 @@ export function InteractiveSalesCoachingSection() {
             </a>
           </div>
           <div className="flex justify-center items-center">
-            <div className="w-full h-[400px] max-w-[600px] rounded-xl overflow-hidden">
-              {activeTab === 'CLARITY' && <ClarityVisual />}
-              {activeTab === 'COACHING' && <CoachingVisual />}
-              {activeTab === 'INTELLIGENCE' && <IntelligenceVisual />}
+            <div className="relative w-full h-[420px] md:h-[480px] lg:h-[520px] max-w-[720px] rounded-xl">
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage: `url('${imageByTab[activeTab]}')`,
+                  backgroundSize: 'contain',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: imagePosByTab[activeTab],
+                }}
+              />
+              {/* Top mask to hide unwanted lines in screenshots */}
+              <div className={`absolute top-0 left-0 right-0 ${topMaskHeightByTab[activeTab]} bg-card-light-bg`} />
             </div>
+          </div>
+        </div>
+
+        {/* Metrics strip - show for all tabs */}
+        <div className="mt-10 grid gap-6 md:grid-cols-3">
+          <div className="bg-card-dark-bg rounded-xl p-6 shadow border border-white/10">
+            <div className="text-5xl md:text-6xl font-extrabold text-white">35%</div>
+            <p className="mt-8 text-text-dark-muted">Average lift in close rate with Candytrail across field teams.</p>
+            <div className="mt-6 h-1 bg-primary-pink rounded-full"></div>
+          </div>
+          <div className="bg-card-dark-bg rounded-xl p-6 shadow border border-white/10">
+            <div className="text-5xl md:text-6xl font-extrabold text-white">32 hrs</div>
+            <p className="mt-8 text-text-dark-muted">Average manager time saved weekly with Candytrail.</p>
+            <div className="mt-6 h-1 bg-primary-pink rounded-full"></div>
+          </div>
+          <div className="bg-card-dark-bg rounded-xl p-6 shadow border border-white/10">
+            <div className="text-5xl md:text-6xl font-extrabold text-white">12%</div>
+            <p className="mt-8 text-text-dark-muted">Average increase in ticket size with Candytrail.</p>
+            <div className="mt-6 h-1 bg-primary-pink rounded-full"></div>
           </div>
         </div>
       </div>

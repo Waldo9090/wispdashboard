@@ -3,9 +3,8 @@
 import Link from "next/link"
 import Image from "next/image"
 import { useState, useEffect } from "react"
-import { ArrowRight, Target, Server, Settings, CalendarDays, Clock, LineChart, Zap, Users, Rocket, MessageCircle, Mic, BarChart3 } from 'lucide-react'
+import { ArrowRight, Target, Server, Settings, CalendarDays, Clock, LineChart, Zap, Users, Rocket, MessageCircle, Mic, BarChart3, Phone } from 'lucide-react'
 import { Button } from "@/components/ui/button"
-import { CounterUp } from "@/components/ui/counter-up"
 import { InteractiveSalesCoachingSection } from "@/components/interactive-sales-coaching-section" // Import the new component
 
 export default function LandingPage() {
@@ -71,15 +70,15 @@ return (
 
     <main>
       {/* Hero Section with Video Background */}
-      <section className="relative pt-24 pb-16 md:pt-32 md:pb-24 lg:pt-40 lg:pb-32 bg-custom-light-bg overflow-hidden">
-        <video
-          className="absolute inset-0 w-full h-full object-cover z-0"
-          autoPlay
-          loop
-          muted
-          playsInline
-          src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/CANDYTRAIL-BmM71mJr0fP9EFbn0h4JNwVUtwhzuj.mp4"
-        />
+      <section className="relative pt-24 pb-16 md:pt-32 md:pb-24 lg:pt-40 lg:pb-32 bg-black overflow-hidden">
+        {/* Right-half background image with left fade to black */}
+        <div className="absolute inset-y-0 right-0 w-1/2 z-0">
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url('/images/BackImage.png')` }}
+          />
+          <div className="absolute inset-y-0 left-0 w-1/3 bg-gradient-to-l from-transparent to-black" />
+        </div>
         <div className="absolute inset-0 bg-black opacity-50 z-0"></div> {/* Overlay for readability */}
         <div className="container relative z-10 grid lg:grid-cols-2 gap-12 items-center px-4 md:px-8 lg:px-12 text-text-dark-primary">
           <div className="space-y-6">
@@ -87,15 +86,26 @@ return (
               <Image src="/yclogothing.svg" width={16} height={16} alt="Y Combinator Logo" className="h-4 w-4 object-contain" />
               <span>Backed by Y Combinator</span>
             </div>
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight text-white">
-              Intelligence from every customer interaction
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-white">
+              Reveal insights from every conversation
             </h1>
-            <Link href="https://calendly.com/adimahna/30min" target="_blank" rel="noopener noreferrer" className="mt-4 inline-block">
-              <Button className="bg-primary-pink text-text-dark-primary hover:bg-primary-pink/90 px-8 py-3 rounded-md shadow-md flex items-center space-x-2">
-                <span>Book Demo</span>
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-            </Link>
+            <p className="text-lg text-gray-200 max-w-xl">
+              Capture and review in‑person sales visits to coach better, spread winning playbooks, and find missed revenue.
+            </p>
+            <div className="mt-6 flex items-center gap-4">
+              <Link href="https://calendly.com/adimahna/30min" target="_blank" rel="noopener noreferrer" className="inline-block">
+                <Button className="bg-primary-pink text-text-dark-primary hover:bg-primary-pink/90 px-10 py-8 text-lg md:text-xl rounded-xl shadow-md font-semibold flex items-center space-x-3">
+                  <span>Book Demo</span>
+                  <ArrowRight className="h-6 w-6" />
+                </Button>
+              </Link>
+              <Link href="tel:+19494138582" className="inline-block">
+                <Button className="bg-transparent border-2 border-white text-white hover:bg-white/10 px-10 py-8 text-lg md:text-xl rounded-xl shadow-md font-semibold flex items-center space-x-3">
+                  <span>Talk to us</span>
+                  <Phone className="h-6 w-6" />
+                </Button>
+              </Link>
+            </div>
           </div>
           {/* Calendar removed */}
         </div>
@@ -120,9 +130,7 @@ return (
                 <h3 className="text-2xl font-bold">Talk</h3>
               </div>
               <p className="text-text-dark-muted">
-                Your reps talks to your customers.
-                <br />
-                They try to close the deal.
+                Your reps talk to customers in person and work to close the deal.
               </p>
               <div className="w-full h-1 bg-accent-pink mt-4" />
             </div>
@@ -135,7 +143,7 @@ return (
                 <h3 className="text-2xl font-bold">Capture</h3>
               </div>
               <p className="text-text-dark-muted">
-                Candytrail automatically records and transcribes every sales conversation.
+                Automatically records and transcribes in‑person sales.
               </p>
               <div className="w-full h-1 bg-accent-pink mt-4" />
             </div>
@@ -145,10 +153,10 @@ return (
               </div>
               <div className="flex items-center space-x-2 mb-2">
                 <span className="bg-primary-pink text-text-dark-primary rounded-full h-6 w-6 flex items-center justify-center text-sm font-bold">3</span>
-                <h3 className="text-2xl font-bold">Analyse</h3>
+                <h3 className="text-2xl font-bold">Analyze</h3>
               </div>
               <p className="text-text-dark-muted">
-                Candytrail&apos;s AI analyzes patterns and delivers actionable coaching insights.
+                Candytrail&apos;s AI reviews each visit and provides clear coaching and follow‑ups.
               </p>
               <div className="w-full h-1 bg-accent-pink mt-4" />
             </div>
@@ -161,10 +169,11 @@ return (
         <div className="container grid lg:grid-cols-2 gap-12 items-center px-4 md:px-8 lg:px-12">
           <div className="space-y-6">
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-              Complete Customer Interaction Intelligence
+              Get full visibility
+              <br />into every sales conversation
             </h2>
             <p className="text-lg text-text-dark-muted max-w-lg">
-              Complete customer interaction tracking with recordings, transcripts, and analytics from every touchpoint.
+              Virtual ridealongs provide recordings, transcripts, summaries, and analytics from every visit. Review, comment, and highlight what matters.
             </p>
           </div>
           <div className="relative">
@@ -221,10 +230,10 @@ return (
                 backgroundPosition: 'center'
               }}
             >
-              <div className="relative z-10">
+              <div className="relative z-10 space-y-4">
                 <div className="bg-black/70 rounded-lg p-4 backdrop-blur-sm">
                   <h3 className="text-sm font-medium text-white mb-3">INTERACTION BREAKDOWN</h3>
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <div className="w-6 h-6 bg-primary-pink rounded-full flex items-center justify-center text-white text-xs">C</div>
@@ -295,7 +304,7 @@ return (
         <div className="container grid lg:grid-cols-2 gap-12 items-center px-4 md:px-8 lg:px-12">
           <div className="space-y-6">
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-              Manage your team remotely.
+              Manage your team remotely
             </h2>
             <p className="text-lg text-text-dark-muted max-w-lg">
               With our platform, you can supervise from any location. Your team leaders no longer need constant travel. They can guide and support all staff members directly from their home office or any remote location.
@@ -353,19 +362,19 @@ return (
         <div className="absolute inset-0 bg-black opacity-60"></div>
         <div className="container relative z-10 px-4 md:px-8 lg:px-12 text-center">
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-8">
-            Ready to ditch hit-or-miss ride-alongs?
+            Ready to ditch hit-or-miss shadows?
           </h2>
-          <p className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">
             Let Candytrail auto-coach every conversation and turn daily customer interactions into data-driven training.
           </p>
-          <div className="space-y-4">
+          <div>
             <Link href="https://calendly.com/adimahna/30min" target="_blank" rel="noopener noreferrer">
-              <Button className="bg-primary-pink text-white hover:bg-primary-pink/90 px-8 py-4 rounded-md shadow-md text-lg font-semibold flex items-center space-x-2 mx-auto">
+              <Button className="bg-primary-pink text-white hover:bg-primary-pink/90 px-12 py-6 rounded-xl shadow-lg text-xl md:text-2xl font-semibold flex items-center space-x-3 mx-auto">
                 <span>Book a Live Demo</span>
-                <ArrowRight className="h-5 w-5" />
+                <ArrowRight className="h-7 w-7" />
               </Button>
             </Link>
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-400 mt-8">
               Check out candytrail at <span className="text-primary-pink">candytrail.ai</span> | Reach us at <span className="text-primary-pink">founders@candytrail.ai</span>
             </p>
           </div>
