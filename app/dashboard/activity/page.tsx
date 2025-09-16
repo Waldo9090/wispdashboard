@@ -164,6 +164,10 @@ export default function Dashboard() {
   
   // Debug authentication state
   console.log('🔐 Dashboard component - user:', user?.uid, 'authLoading:', authLoading)
+  console.log('🔐 User object full:', user)
+  
+  // Add immediate console log to see if component is rendering
+  console.log('🚀 Dashboard component rendered at:', new Date().toISOString())
   
   // Helper function to format time ago
   const formatTimeAgo = (date: Date): string => {
@@ -229,11 +233,13 @@ export default function Dashboard() {
     console.log('🔄 useEffect triggered - showTranscriptModal:', showTranscriptModal, 'user:', user?.uid)
     console.log('🔄 User object:', user)
     console.log('🔄 Auth loading:', authLoading)
+    console.log('🔄 useEffect dependencies changed at:', new Date().toISOString())
     if (showTranscriptModal && user) {
       console.log('✅ Calling loadExistingComments with user.uid:', user.uid)
       loadExistingComments(user.uid)
     } else {
       console.log('❌ Not calling loadExistingComments - showTranscriptModal:', showTranscriptModal, 'user exists:', !!user)
+      console.log('❌ Detailed check - showTranscriptModal type:', typeof showTranscriptModal, 'user type:', typeof user)
     }
   }, [showTranscriptModal, user, authLoading])
   
