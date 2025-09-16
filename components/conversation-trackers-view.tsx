@@ -403,12 +403,14 @@ export function ConversationTrackersView() {
   
   // Load existing comments for a phrase
   const loadExistingComments = async (repId: string) => {
-    if (!selectedPhrase?.rep_id) return;
+    const effectiveRepId = repId || selectedPhrase?.rep_id;
+    if (!effectiveRepId) return;
     
     try {
       setLoadingComments(true);
       
-      const alertsRef = doc(db, 'alerts', selectedPhrase.rep_id);
+      const deviceId = extractBaseDocumentId(effectiveRepId);
+      const alertsRef = doc(db, 'alerts', deviceId);
       const alertsSnap = await getDoc(alertsRef);
       
       if (alertsSnap.exists()) {
@@ -471,8 +473,9 @@ export function ConversationTrackersView() {
         lastUpdated: new Date()
       };
       
-      console.log(`🎯 Using rep_id for alerts: ${selectedPhrase.rep_id}`);
-      const alertsRef = doc(db, 'alerts', selectedPhrase.rep_id);
+      const deviceId = extractBaseDocumentId(selectedPhrase.rep_id);
+      console.log(`🎯 Using deviceId for alerts: ${deviceId} (from rep_id: ${selectedPhrase.rep_id})`);
+      const alertsRef = doc(db, 'alerts', deviceId);
       const alertsSnap = await getDoc(alertsRef);
       
       let existingAlerts = [];
@@ -487,10 +490,10 @@ export function ConversationTrackersView() {
       existingAlerts.push(alertDoc);
       
       await setDoc(alertsRef, { alerts: existingAlerts }, { merge: true });
-      console.log(`✅ Comment saved to /alerts/${selectedPhrase.rep_id}`);
+      console.log(`✅ Comment saved to /alerts/${deviceId}`);
       
       setComment('');
-      loadExistingComments();
+      loadExistingComments(selectedPhrase.rep_id);
       
     } catch (error) {
       console.error('Error saving comment:', error);
@@ -592,7 +595,7 @@ export function ConversationTrackersView() {
     setSelectedPhrase(phrase);
     setShowNotesModal(true);
     setShowFullStatsModal(false);
-            loadExistingComments();
+            loadExistingComments(phrase.rep_id);
   };
 
   return (

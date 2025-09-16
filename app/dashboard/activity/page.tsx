@@ -3020,13 +3020,22 @@ export default function Dashboard() {
                         saveComment()
                       }}
                       disabled={!comment.trim() || !highlightedText || savingComment}
+                      onMouseEnter={() => {
+                        console.log('🔍 Save button hover - State:', {
+                          hasComment: !!comment.trim(),
+                          hasHighlightedText: !!highlightedText,
+                          isSaving: savingComment,
+                          comment: comment.trim(),
+                          highlightedText: highlightedText
+                        })
+                      }}
                       className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                         !comment.trim() || !highlightedText || savingComment
                           ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                           : 'bg-gray-900 text-white hover:bg-gray-800'
                       }`}
                     >
-                      {savingComment ? 'Saving...' : 'Save'}
+                      {savingComment ? 'Saving...' : `Save (${!comment.trim() ? 'no-comment' : 'has-comment'}-${!highlightedText ? 'no-highlight' : 'has-highlight'})`}
                     </button>
                     <button
                       onClick={() => {
