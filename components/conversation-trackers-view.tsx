@@ -409,8 +409,9 @@ export function ConversationTrackersView() {
     try {
       setLoadingComments(true);
       
-      const recordingId = effectiveRepId; // Use the full rep_id as the recording ID
-      const alertsRef = doc(db, 'alerts', recordingId);
+      if (!user) return;
+      const deviceId = user.uid; // Use the user's device ID
+      const alertsRef = doc(db, 'alerts', deviceId);
       const alertsSnap = await getDoc(alertsRef);
       
       if (alertsSnap.exists()) {
@@ -473,8 +474,8 @@ export function ConversationTrackersView() {
         lastUpdated: new Date()
       };
       
-      const deviceId = selectedPhrase.rep_id; // Use the full rep_id as the recording ID
-      console.log(`🎯 Using recording ID for alerts: ${deviceId}`);
+      const deviceId = user.uid; // Use the user's device ID
+      console.log(`🎯 Using user device ID for alerts: ${deviceId}`);
       const alertsRef = doc(db, 'alerts', deviceId);
       const alertsSnap = await getDoc(alertsRef);
       
@@ -490,10 +491,10 @@ export function ConversationTrackersView() {
       existingAlerts.push(alertDoc);
       
       await setDoc(alertsRef, { alerts: existingAlerts }, { merge: true });
-      console.log(`✅ Comment saved to /alerts/${deviceId}`);
+      console.log(`✅ Comment saved to /alerts/${user.uid}`);
       
       setComment('');
-      loadExistingComments(selectedPhrase.rep_id);
+      loadExistingComments(user.uid);
       
     } catch (error) {
       console.error('Error saving comment:', error);

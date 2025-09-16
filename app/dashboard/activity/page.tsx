@@ -222,10 +222,10 @@ export default function Dashboard() {
   
   // Load comments when transcript modal is opened
   useEffect(() => {
-    if (showTranscriptModal && selectedTranscript) {
-      loadExistingComments(selectedTranscript.id)
+    if (showTranscriptModal && user) {
+      loadExistingComments(user.uid)
     }
-  }, [showTranscriptModal, selectedTranscript])
+  }, [showTranscriptModal, user])
   
   // Sign out function
   const handleSignOut = async () => {
@@ -609,14 +609,14 @@ export default function Dashboard() {
   }
 
   // Function to load existing comments and alerts from alerts collection
-  const loadExistingComments = async (recordingId?: string) => {
-    if (!recordingId) return
+  const loadExistingComments = async (deviceId?: string) => {
+    if (!deviceId) return
     
     try {
       setLoadingComments(true)
-      console.log(`🔍 Loading existing alerts and comments for recording ID: ${recordingId}`)
+      console.log(`🔍 Loading existing alerts and comments for device ID: ${deviceId}`)
       
-      const alertsRef = doc(db, 'alerts', recordingId)
+      const alertsRef = doc(db, 'alerts', deviceId)
       const alertsSnap = await getDoc(alertsRef)
       
       if (alertsSnap.exists()) {
@@ -1457,8 +1457,8 @@ export default function Dashboard() {
         lastUpdated: new Date()
       }
 
-      // Save to alerts using the recording ID as document ID
-      const alertsRef = doc(db, 'alerts', selectedTranscript.id)
+      // Save to alerts using the user's device ID as document ID
+      const alertsRef = doc(db, 'alerts', user.uid)
       const alertsSnap = await getDoc(alertsRef)
       
       let existingAlerts = []
@@ -1474,14 +1474,14 @@ export default function Dashboard() {
       await setDoc(alertsRef, { alerts: existingAlerts }, { merge: true })
       
       console.log('✅ Comment saved successfully!')
-      console.log(`📍 Saved to /alerts/${selectedTranscript.id}`)
+      console.log(`📍 Saved to /alerts/${user.uid}`)
 
       // Clear form
       setComment('')
       setHighlightedText(null)
       
       // Reload comments to show the new one
-      loadExistingComments(selectedTranscript.id)
+      loadExistingComments(user.uid)
       
     } catch (error) {
       console.error('❌ Error saving comment:', error)
@@ -2381,7 +2381,9 @@ export default function Dashboard() {
           // Open the transcript modal with comments popup
           setSelectedTranscript(transcriptObject)
           setShowTranscriptModal(true)
-          loadExistingComments(transcriptObject.id)
+          if (user) {
+            loadExistingComments(user.uid)
+          }
           
           // Auto-highlight the clicked phrase
           setTimeout(() => {
