@@ -7,7 +7,7 @@ import Link from "next/link"
 import { useTheme } from "next-themes"
 import Image from "next/image"
 import { useAuth } from "@/context/auth-context"
-import { doc, getDoc, collection, getDocs } from "firebase/firestore"
+import { doc, getDoc, setDoc, collection, getDocs } from "firebase/firestore"
 import { db, functions } from "@/lib/firebase"
 import { getUserDisplayName, isUserDataEncrypted } from "@/lib/decryption-utils"
 import { httpsCallable } from "firebase/functions"
@@ -84,8 +84,7 @@ export default function ActivityLayout({
       console.log(`🔍 [COMMENTS] Loading comments for user: ${foundPersonId}`)
 
       try {
-        const { doc: firestoreDoc, getDoc } = await import('firebase/firestore')
-        const alertsRef = firestoreDoc(db, 'alerts', foundPersonId)
+        const alertsRef = doc(db, 'alerts', foundPersonId)
         const alertsSnap = await getDoc(alertsRef)
 
         if (alertsSnap.exists()) {
@@ -128,8 +127,7 @@ export default function ActivityLayout({
         setTimeout(() => {
           const loadComments = async () => {
             try {
-              const { doc: firestoreDoc, getDoc } = await import('firebase/firestore')
-              const alertsRef = firestoreDoc(db, 'alerts', foundPersonId)
+              const alertsRef = doc(db, 'alerts', foundPersonId)
               const alertsSnap = await getDoc(alertsRef)
 
               if (alertsSnap.exists()) {
@@ -334,9 +332,8 @@ export default function ActivityLayout({
       }
 
       // Save to alerts using the recording owner's user ID as document ID
-      const { doc: firestoreDoc, getDoc, setDoc } = await import('firebase/firestore')
       const recordingOwnerUserId = foundPersonId || user.uid // Use the person who owns this recording
-      const alertsRef = firestoreDoc(db, 'alerts', recordingOwnerUserId)
+      const alertsRef = doc(db, 'alerts', recordingOwnerUserId)
       const alertsSnap = await getDoc(alertsRef)
 
       let existingAlerts = []
@@ -1555,8 +1552,7 @@ export default function ActivityLayout({
                                 }
                                 console.log('🔄 Manual comment refresh triggered for:', foundPersonId)
                                 try {
-                                  const { doc: firestoreDoc, getDoc } = await import('firebase/firestore')
-                                  const alertsRef = firestoreDoc(db, 'alerts', foundPersonId)
+                                  const alertsRef = doc(db, 'alerts', foundPersonId)
                                   const alertsSnap = await getDoc(alertsRef)
 
                                   if (alertsSnap.exists()) {
