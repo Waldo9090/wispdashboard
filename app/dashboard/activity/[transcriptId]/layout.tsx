@@ -71,6 +71,94 @@ export default function ActivityLayout({
     setProcessingTimedOut(false)
   }, [])
 
+  // Load existing comments when foundPersonId is available
+  useEffect(() => {
+    console.log('🔄 [COMMENTS] useEffect triggered - foundPersonId:', foundPersonId)
+
+    const loadComments = async () => {
+      if (!foundPersonId) {
+        console.log('⏸️ [COMMENTS] No foundPersonId available, skipping comment load')
+        return
+      }
+
+      console.log(`🔍 [COMMENTS] Loading comments for user: ${foundPersonId}`)
+
+      try {
+        const { doc: firestoreDoc, getDoc } = await import('firebase/firestore')
+        const alertsRef = firestoreDoc(db, 'alerts', foundPersonId)
+        const alertsSnap = await getDoc(alertsRef)
+
+        if (alertsSnap.exists()) {
+          const data = alertsSnap.data()
+          const alerts = Array.isArray(data?.alerts) ? data.alerts : []
+
+          console.log(`🔍 [LOAD] Document exists for user ${foundPersonId}`)
+          console.log(`🔍 [LOAD] Raw alerts data:`, alerts.length, 'items')
+
+          // Sort by timestamp (newest first) and filter for valid comments
+          const sortedComments = alerts
+            .filter((alert: any) => alert && (alert.message || alert.title))
+            .sort((a: any, b: any) => {
+              const timeA = new Date(a.timestamp || 0).getTime()
+              const timeB = new Date(b.timestamp || 0).getTime()
+              return timeB - timeA
+            })
+
+          setExistingComments(sortedComments)
+          console.log(`✅ Loaded ${sortedComments.length} existing comments for user ${foundPersonId}`)
+        } else {
+          setExistingComments([])
+          console.log(`📄 No alerts document found for user ${foundPersonId}`)
+        }
+      } catch (error) {
+        console.error('❌ Error loading existing comments:', error)
+        setExistingComments([])
+      }
+    }
+
+    loadComments()
+  }, [foundPersonId])
+
+  // Additional effect to ensure comments are loaded when page becomes visible
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && foundPersonId) {
+        console.log('👁️ [COMMENTS] Page became visible, reloading comments for:', foundPersonId)
+        // Small delay to ensure everything is properly loaded
+        setTimeout(() => {
+          const loadComments = async () => {
+            try {
+              const { doc: firestoreDoc, getDoc } = await import('firebase/firestore')
+              const alertsRef = firestoreDoc(db, 'alerts', foundPersonId)
+              const alertsSnap = await getDoc(alertsRef)
+
+              if (alertsSnap.exists()) {
+                const data = alertsSnap.data()
+                const alerts = Array.isArray(data?.alerts) ? data.alerts : []
+                const sortedComments = alerts
+                  .filter((alert: any) => alert && (alert.message || alert.title))
+                  .sort((a: any, b: any) => {
+                    const timeA = new Date(a.timestamp || 0).getTime()
+                    const timeB = new Date(b.timestamp || 0).getTime()
+                    return timeB - timeA
+                  })
+
+                setExistingComments(sortedComments)
+                console.log(`🔄 [VISIBILITY] Reloaded ${sortedComments.length} comments`)
+              }
+            } catch (error) {
+              console.error('❌ Error reloading comments on visibility change:', error)
+            }
+          }
+          loadComments()
+        }, 500)
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [foundPersonId])
+
   // Load current user status to filter sidebar items
   useEffect(() => {
     const loadCurrentUserStatus = async () => {
@@ -128,6 +216,7 @@ export default function ActivityLayout({
 
         if (foundPersonId && foundTranscriptData) {
           // Store the person ID for insights fetching
+          console.log(`📝 [TRANSCRIPT] Setting foundPersonId to: ${foundPersonId}`)
           setFoundPersonId(foundPersonId)
           
           // Get person info
@@ -214,23 +303,88 @@ export default function ActivityLayout({
     return personName !== 'Unknown User' ? `${personName}'s Activity` : 'Activity Details'
   }
 
-  const saveComment = () => {
-    if (comment.trim() && highlightedText && !savingComment) {
+  const saveComment = async () => {
+    const resolvedParams = await params
+    if (!comment.trim() || !highlightedText || savingComment || !user || !resolvedParams.transcriptId) {
+      return
+    }
+
+    try {
       setSavingComment(true)
-      // Save comment logic here
-      setTimeout(() => {
-        setExistingComments([...existingComments, {
-          message: comment,
-          transcriptReferences: [{
-            quote: highlightedText.text,
-            category: 'General Comment'
-          }],
-          timestamp: new Date()
-        }])
-        setComment('')
-        setHighlightedText(null)
-        setSavingComment(false)
-      }, 1000)
+
+      // Generate unique alert ID
+      const alertId = `comment-${resolvedParams.transcriptId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
+      // Create alert document structure - matches iOS app expected format
+      const alertDoc = {
+        id: alertId,
+        isRead: false,
+        message: comment.trim(),
+        recordingId: resolvedParams.transcriptId,
+        timestamp: new Date().toISOString(),
+        title: `Comment on ${transcriptName || 'Transcript'}`,
+        type: "warning",
+        transcriptReferences: [{
+          quote: highlightedText.text,
+          speaker: highlightedText.speaker || 'Multiple Speakers',
+          entryId: resolvedParams.transcriptId,
+          entryIndex: -1, // We don't have entry index in this context
+          context: "Speaker Comment"
+        }]
+      }
+
+      // Save to alerts using the recording owner's user ID as document ID
+      const { doc: firestoreDoc, getDoc, setDoc } = await import('firebase/firestore')
+      const recordingOwnerUserId = foundPersonId || user.uid // Use the person who owns this recording
+      const alertsRef = firestoreDoc(db, 'alerts', recordingOwnerUserId)
+      const alertsSnap = await getDoc(alertsRef)
+
+      let existingAlerts = []
+      if (alertsSnap.exists()) {
+        const data = alertsSnap.data()
+        existingAlerts = Array.isArray(data?.alerts) ? data.alerts : []
+      }
+
+      // Add new alert to the array
+      existingAlerts.push(alertDoc)
+
+      console.log(`💾 [SAVE] About to save ${existingAlerts.length} alerts to alerts/${recordingOwnerUserId}`)
+      console.log(`💾 [SAVE] Document exists: ${alertsSnap.exists()}`)
+      console.log(`💾 [SAVE] Existing alerts before save:`, existingAlerts.length)
+
+      // Save back to Firestore - ensure we create the document structure properly
+      await setDoc(alertsRef, {
+        alerts: existingAlerts,
+        lastUpdated: new Date().toISOString(),
+        userId: recordingOwnerUserId
+      }, { merge: true })
+
+      // Verify the save was successful
+      const verificationSnap = await getDoc(alertsRef)
+      if (verificationSnap.exists()) {
+        const verificationData = verificationSnap.data()
+        const savedAlerts = verificationData?.alerts || []
+        console.log(`✅ [VERIFY] Save successful - document now has ${savedAlerts.length} alerts`)
+      } else {
+        console.error('❌ [VERIFY] Document does not exist after save attempt!')
+      }
+
+      // Update local state with simplified format
+      setExistingComments([...existingComments, alertDoc])
+      setComment('')
+      setHighlightedText(null)
+
+      console.log('✅ Comment saved successfully!')
+      console.log(`📍 Saved to Firestore path: alerts/${recordingOwnerUserId}`)
+      console.log(`👤 Recording owner: ${recordingOwnerUserId}`)
+      console.log(`👤 Current user: ${user.uid}`)
+      console.log('💾 Comment data:', JSON.stringify(alertDoc, null, 2))
+      console.log(`📊 Total comments in collection: ${existingAlerts.length}`)
+
+    } catch (error) {
+      console.error('❌ Error saving comment:', error)
+    } finally {
+      setSavingComment(false)
     }
   }
 
@@ -1391,7 +1545,46 @@ export default function ActivityLayout({
                     <div className="flex-1 overflow-y-auto p-4">
                       {rightActiveTab === 'comments' && (
                         <div className="space-y-4">
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Comments</h3>
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Comments</h3>
+                            <button
+                              onClick={async () => {
+                                if (!foundPersonId) {
+                                  console.log('❌ No foundPersonId available for refresh')
+                                  return
+                                }
+                                console.log('🔄 Manual comment refresh triggered for:', foundPersonId)
+                                try {
+                                  const { doc: firestoreDoc, getDoc } = await import('firebase/firestore')
+                                  const alertsRef = firestoreDoc(db, 'alerts', foundPersonId)
+                                  const alertsSnap = await getDoc(alertsRef)
+
+                                  if (alertsSnap.exists()) {
+                                    const data = alertsSnap.data()
+                                    const alerts = Array.isArray(data?.alerts) ? data.alerts : []
+                                    const sortedComments = alerts
+                                      .filter((alert: any) => alert && (alert.message || alert.title))
+                                      .sort((a: any, b: any) => {
+                                        const timeA = new Date(a.timestamp || 0).getTime()
+                                        const timeB = new Date(b.timestamp || 0).getTime()
+                                        return timeB - timeA
+                                      })
+
+                                    setExistingComments(sortedComments)
+                                    console.log(`🔄 Manual refresh loaded ${sortedComments.length} comments`)
+                                  } else {
+                                    console.log('📄 No document found during manual refresh')
+                                    setExistingComments([])
+                                  }
+                                } catch (error) {
+                                  console.error('❌ Manual refresh error:', error)
+                                }
+                              }}
+                              className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                            >
+                              🔄 Refresh
+                            </button>
+                          </div>
                           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Private to your company</p>
                           
                           {/* Add Comment Form */}
@@ -1458,22 +1651,30 @@ export default function ActivityLayout({
                             {existingComments.length > 0 ? (
                               <div className="space-y-3 max-h-64 overflow-y-auto">
                                 {existingComments.map((existingComment, index) => (
-                                  <div key={index} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg border-l-4 border-purple-400">
+                                  <div key={existingComment.id || index} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg border-l-4 border-purple-400">
                                     <div className="flex items-start justify-between mb-2">
                                       <span className="text-xs text-purple-600 dark:text-purple-400 font-medium">
-                                        {existingComment.transcriptReferences?.[0]?.category || 'General Comment'}
+                                        {existingComment.transcriptReferences?.[0]?.context || existingComment.title || 'General Comment'}
                                       </span>
                                       <span className="text-xs text-gray-400 dark:text-gray-500">
-                                        {existingComment.timestamp?.toLocaleDateString?.() || 'Recent'}
+                                        {existingComment.timestamp ? new Date(existingComment.timestamp).toLocaleDateString() : 'Recent'}
                                       </span>
                                     </div>
-                                    
+
+                                    {/* Show quoted text if available */}
                                     {existingComment.transcriptReferences?.[0]?.quote && (
-                                      <div className="text-xs text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-600 p-2 rounded border-l-2 border-gray-200 dark:border-gray-500 mb-2">
-                                        "{existingComment.transcriptReferences[0].quote}"
+                                      <div className="text-xs text-gray-500 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-2 rounded border-l-2 border-blue-400 mb-2">
+                                        <div className="flex items-center justify-between mb-1">
+                                          <span className="text-blue-600 dark:text-blue-400 font-medium">
+                                            {existingComment.transcriptReferences[0].speaker || 'Speaker'}
+                                          </span>
+                                        </div>
+                                        <div className="italic">
+                                          "{existingComment.transcriptReferences[0].quote}"
+                                        </div>
                                       </div>
                                     )}
-                                    
+
                                     <div className="text-sm text-gray-700 dark:text-gray-300">
                                       {existingComment.message}
                                     </div>

@@ -1481,14 +1481,32 @@ export default function Dashboard() {
       let existingAlerts = []
       if (alertsSnap.exists()) {
         const data = alertsSnap.data()
-        existingAlerts = data.alerts || []
+        existingAlerts = Array.isArray(data?.alerts) ? data.alerts : []
       }
-      
+
       // Add new alert to the array
       existingAlerts.push(alertDoc)
-      
-      // Save back to Firestore
-      await setDoc(alertsRef, { alerts: existingAlerts }, { merge: true })
+
+      console.log(`💾 [SAVE] About to save ${existingAlerts.length} alerts to alerts/${recordingOwnerUserId}`)
+      console.log(`💾 [SAVE] Document exists: ${alertsSnap.exists()}`)
+      console.log(`💾 [SAVE] Existing alerts before save:`, existingAlerts.length)
+
+      // Save back to Firestore - ensure we create the document structure properly
+      await setDoc(alertsRef, {
+        alerts: existingAlerts,
+        lastUpdated: new Date().toISOString(),
+        userId: recordingOwnerUserId
+      }, { merge: true })
+
+      // Verify the save was successful
+      const verificationSnap = await getDoc(alertsRef)
+      if (verificationSnap.exists()) {
+        const verificationData = verificationSnap.data()
+        const savedAlerts = verificationData?.alerts || []
+        console.log(`✅ [VERIFY] Save successful - document now has ${savedAlerts.length} alerts`)
+      } else {
+        console.error('❌ [VERIFY] Document does not exist after save attempt!')
+      }
 
       console.log('✅ Comment saved successfully!')
       console.log(`📍 Saved to Firestore path: alerts/${recordingOwnerUserId}`)
