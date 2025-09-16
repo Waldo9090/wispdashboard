@@ -409,8 +409,8 @@ export function ConversationTrackersView() {
     try {
       setLoadingComments(true);
       
-      const deviceId = extractBaseDocumentId(effectiveRepId);
-      const alertsRef = doc(db, 'alerts', deviceId);
+      const recordingId = effectiveRepId; // Use the full rep_id as the recording ID
+      const alertsRef = doc(db, 'alerts', recordingId);
       const alertsSnap = await getDoc(alertsRef);
       
       if (alertsSnap.exists()) {
@@ -473,8 +473,8 @@ export function ConversationTrackersView() {
         lastUpdated: new Date()
       };
       
-      const deviceId = extractBaseDocumentId(selectedPhrase.rep_id);
-      console.log(`🎯 Using deviceId for alerts: ${deviceId} (from rep_id: ${selectedPhrase.rep_id})`);
+      const deviceId = selectedPhrase.rep_id; // Use the full rep_id as the recording ID
+      console.log(`🎯 Using recording ID for alerts: ${deviceId}`);
       const alertsRef = doc(db, 'alerts', deviceId);
       const alertsSnap = await getDoc(alertsRef);
       
