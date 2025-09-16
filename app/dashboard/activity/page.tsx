@@ -223,8 +223,12 @@ export default function Dashboard() {
   
   // Load comments when transcript modal is opened
   useEffect(() => {
+    console.log('🔄 useEffect triggered - showTranscriptModal:', showTranscriptModal, 'user:', user?.uid)
     if (showTranscriptModal && user) {
+      console.log('✅ Calling loadExistingComments with user.uid:', user.uid)
       loadExistingComments(user.uid)
+    } else {
+      console.log('❌ Not calling loadExistingComments - showTranscriptModal:', showTranscriptModal, 'user exists:', !!user)
     }
   }, [showTranscriptModal, user])
   
@@ -610,21 +614,30 @@ export default function Dashboard() {
 
   // Function to load existing comments and alerts from alerts collection
   const loadExistingComments = async (deviceId?: string) => {
-    if (!deviceId) return
+    console.log('🔍 loadExistingComments called with deviceId:', deviceId)
+    if (!deviceId) {
+      console.log('❌ No deviceId provided, returning early')
+      return
+    }
     
     try {
       setLoadingComments(true)
       console.log(`🔍 Loading existing alerts and comments for device ID: ${deviceId}`)
       
       const alertsRef = doc(db, 'alerts', deviceId)
+      console.log('📄 Firestore reference:', alertsRef.path)
       const alertsSnap = await getDoc(alertsRef)
       
+      console.log('📄 Document exists:', alertsSnap.exists())
       if (alertsSnap.exists()) {
         const data = alertsSnap.data()
+        console.log('📄 Document data:', data)
         // Handle both array format and direct alerts format
         const alerts = Array.isArray(data.alerts) ? data.alerts : 
                       Array.isArray(data) ? data : 
                       [data] // Single alert object
+        
+        console.log('📄 Processed alerts:', alerts)
         
         // Include all alerts (comments, info, analysis results, etc.) and sort by timestamp (newest first)
         const allAlerts = alerts
@@ -639,7 +652,7 @@ export default function Dashboard() {
         console.log('Alert types:', allAlerts.map((a: any) => a.type || 'untyped'))
         setExistingComments(allAlerts)
       } else {
-        //console.log('📄 No alerts document found for this transcript')
+        console.log('📄 No alerts document found for this device ID')
         setExistingComments([])
       }
     } catch (error) {
