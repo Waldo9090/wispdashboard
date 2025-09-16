@@ -162,6 +162,9 @@ export default function Dashboard() {
   const [totalTranscriptCount, setTotalTranscriptCount] = useState<number>(0)
   const [loading, setLoading] = useState(true)
   
+  // Debug authentication state
+  console.log('🔐 Dashboard component - user:', user?.uid, 'authLoading:', authLoading)
+  
   // Helper function to format time ago
   const formatTimeAgo = (date: Date): string => {
     const now = new Date()
@@ -224,13 +227,15 @@ export default function Dashboard() {
   // Load comments when transcript modal is opened
   useEffect(() => {
     console.log('🔄 useEffect triggered - showTranscriptModal:', showTranscriptModal, 'user:', user?.uid)
+    console.log('🔄 User object:', user)
+    console.log('🔄 Auth loading:', authLoading)
     if (showTranscriptModal && user) {
       console.log('✅ Calling loadExistingComments with user.uid:', user.uid)
       loadExistingComments(user.uid)
     } else {
       console.log('❌ Not calling loadExistingComments - showTranscriptModal:', showTranscriptModal, 'user exists:', !!user)
     }
-  }, [showTranscriptModal, user])
+  }, [showTranscriptModal, user, authLoading])
   
   // Sign out function
   const handleSignOut = async () => {
