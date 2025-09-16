@@ -35,7 +35,7 @@ import { collection, getDocs, doc, getDoc, setDoc } from "firebase/firestore"
 import { signOut } from "firebase/auth"
 import { db, auth } from "@/lib/firebase"
 
-import { getUserDisplayName, isUserDataEncrypted, testDecryption } from "@/lib/decryption-utils"
+import { getUserDisplayName, isUserDataEncrypted } from "@/lib/decryption-utils"
 import { logger, clientLogger } from "@/lib/logger"
 import { SalesPerformanceSummary, IndividualSalesPerformance } from "@/components/sales-performance-summary"
 import { calculateSalesPerformanceAverages, getSalesPerformanceInsights } from "@/lib/sales-performance-utils"
@@ -157,6 +157,7 @@ interface AlertData {
 }
 
 export default function Dashboard() {
+  const { user, loading: authLoading } = useAuth()
   const [activeTab, setActiveTab] = useState("ACTIVITY")
   const [totalTranscriptCount, setTotalTranscriptCount] = useState<number>(0)
   const [loading, setLoading] = useState(true)
@@ -526,7 +527,6 @@ export default function Dashboard() {
     setChatMessages([])
   }
 
-  const { user, loading: authLoading } = useAuth()
   const searchParams = useSearchParams()
   const router = useRouter()
   const [currentUserStatus, setCurrentUserStatus] = useState<string | null>(null)
