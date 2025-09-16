@@ -1455,34 +1455,27 @@ export default function Dashboard() {
       // Determine if this is a TRACKERS comment (from clicking a tracker phrase)
       const isTrackersComment = activeTab === "TRACKERS"
       
-      // Create alert document structure
+      // Create alert document structure - matches iOS app expected format
       const alertDoc = {
         id: alertId,
         isRead: false,
         message: comment.trim(),
         recordingId: selectedTranscript.id,
-        timestamp: new Date(),
+        timestamp: new Date().toISOString(),
         title: `${isTrackersComment ? 'TRACKERS' : 'Comment'} on ${selectedTranscript.name}`,
-        transcriptReferences: [{
-          context: isTrackersComment ? "TRACKERS Analysis" : "Speaker Comment",
-          entryId: selectedTranscript.id,
-          entryIndex: highlightedText.entryIndex,
-          quote: highlightedText.text,
-          speaker: highlightedText.speaker,
-          category: isTrackersComment ? "Tracker Analysis" : "General Comment",
-          highlightedPhrase: highlightedText.text,
-          transcriptName: selectedTranscript.name,
-          audioURL: selectedTranscript.audioURL || ''
-        }],
         type: "warning",
-        source: isTrackersComment ? "TRACKERS_TAB" : "DIRECT_SELECTION",
-        userEmail: user.email || 'unknown',
-        userName: user.displayName || 'Unknown User',
-        lastUpdated: new Date()
+        transcriptReferences: [{
+          quote: highlightedText.text,
+          speaker: highlightedText.speaker || 'Multiple Speakers',
+          entryId: selectedTranscript.id,
+          entryIndex: highlightedText.entryIndex || -1,
+          context: isTrackersComment ? "TRACKERS Analysis" : "Speaker Comment"
+        }]
       }
 
-      // Save to alerts using the user's device ID as document ID
-      const alertsRef = doc(db, 'alerts', user.uid)
+      // Save to alerts using the recording owner's user ID as document ID
+      const recordingOwnerUserId = transcriptDocumentId || user.uid // Use the person who owns this recording
+      const alertsRef = doc(db, 'alerts', recordingOwnerUserId)
       const alertsSnap = await getDoc(alertsRef)
       
       let existingAlerts = []
@@ -1496,16 +1489,20 @@ export default function Dashboard() {
       
       // Save back to Firestore
       await setDoc(alertsRef, { alerts: existingAlerts }, { merge: true })
-      
+
       console.log('✅ Comment saved successfully!')
-      console.log(`📍 Saved to /alerts/${user.uid}`)
+      console.log(`📍 Saved to Firestore path: alerts/${recordingOwnerUserId}`)
+      console.log(`👤 Recording owner: ${recordingOwnerUserId}`)
+      console.log(`👤 Current user: ${user.uid}`)
+      console.log('💾 Comment data:', JSON.stringify(alertDoc, null, 2))
+      console.log(`📊 Total comments in collection: ${existingAlerts.length}`)
 
       // Clear form
       setComment('')
       setHighlightedText(null)
       
       // Reload comments to show the new one
-      loadExistingComments(user.uid)
+      loadExistingComments(recordingOwnerUserId)
       
     } catch (error) {
       console.error('❌ Error saving comment:', error)
@@ -1778,14 +1775,21 @@ export default function Dashboard() {
       console.log('⏰ [CLIENT] Total timestamps found:', timestampsResults.reduce((sum, result) => sum + result.timestamps.length, 0))
       
       const timestampsData: TimestampData[] = []
-      
+      const processedTimestampIds = new Set<string>()
+
       // Process all timestamps with pre-loaded transcript data
       console.log('🔄 [CLIENT] Processing timestamps data...')
       timestampsResults.forEach(({ documentId, timestamps }) => {
         const parentTranscriptData = transcriptDataMap.get(documentId)
         console.log('📝 [CLIENT] Processing', timestamps.length, 'timestamps for document:', documentId)
-        
+
         timestamps.forEach(timestampDoc => {
+            // Skip if we've already processed this timestamp ID
+            if (processedTimestampIds.has(timestampDoc.id)) {
+              console.log('⚠️ [CLIENT] Skipping duplicate timestamp:', timestampDoc.id)
+              return
+            }
+            processedTimestampIds.add(timestampDoc.id)
             const timestampData = timestampDoc.data()
             
           const speakerTranscriptData = timestampData['speaker transcript'] || 
