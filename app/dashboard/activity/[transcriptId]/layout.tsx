@@ -49,6 +49,10 @@ export default function ActivityLayout({
   const [comment, setComment] = useState('')
   const [existingComments, setExistingComments] = useState<any[]>([])
   const [savingComment, setSavingComment] = useState(false)
+  const [adminComment, setAdminComment] = useState('')
+  const [adminComments, setAdminComments] = useState<any[]>([])
+  const [savingAdminComment, setSavingAdminComment] = useState(false)
+  const [highlightedTextForAdmin, setHighlightedTextForAdmin] = useState<{text: string, speaker: string, range?: Range} | null>(null)
   const [selectedTextElement, setSelectedTextElement] = useState<HTMLElement | null>(null)
   const [highlightPosition, setHighlightPosition] = useState<{top: number, left: number} | null>(null)
   const [insightsData, setInsightsData] = useState<any>(null)
@@ -156,6 +160,48 @@ export default function ActivityLayout({
     document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [foundPersonId])
+
+  // Load admin comments when foundPersonId and transcriptId are available
+  useEffect(() => {
+    const loadAdminComments = async () => {
+      const resolvedParams = await params
+      if (!foundPersonId || !resolvedParams.transcriptId) {
+        console.log('⏸️ [ADMIN_COMMENTS] No foundPersonId or transcriptId available')
+        return
+      }
+
+      console.log(`🔍 [ADMIN_COMMENTS] Loading admin comments for transcript: ${resolvedParams.transcriptId}`)
+
+      try {
+        const adminCommentsRef = doc(db, 'adminComments', foundPersonId, 'transcripts', resolvedParams.transcriptId)
+        const adminCommentsSnap = await getDoc(adminCommentsRef)
+
+        if (adminCommentsSnap.exists()) {
+          const data = adminCommentsSnap.data()
+          const comments = Array.isArray(data?.comments) ? data.comments : []
+
+          const sortedComments = comments
+            .filter((comment: any) => comment && comment.message)
+            .sort((a: any, b: any) => {
+              const timeA = new Date(a.timestamp || 0).getTime()
+              const timeB = new Date(b.timestamp || 0).getTime()
+              return timeB - timeA
+            })
+
+          setAdminComments(sortedComments)
+          console.log(`✅ Loaded ${sortedComments.length} admin comments`)
+        } else {
+          setAdminComments([])
+          console.log(`📄 No admin comments found`)
+        }
+      } catch (error) {
+        console.error('❌ Error loading admin comments:', error)
+        setAdminComments([])
+      }
+    }
+
+    loadAdminComments()
+  }, [foundPersonId, params])
 
   // Load current user status to filter sidebar items
   useEffect(() => {
@@ -382,6 +428,97 @@ export default function ActivityLayout({
       console.error('❌ Error saving comment:', error)
     } finally {
       setSavingComment(false)
+    }
+  }
+
+  const saveAdminComment = async () => {
+    const resolvedParams = await params
+    if (!adminComment.trim() || !highlightedTextForAdmin || savingAdminComment || !user || !resolvedParams.transcriptId) {
+      return
+    }
+
+    try {
+      setSavingAdminComment(true)
+
+      const commentId = `admin-comment-${resolvedParams.transcriptId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+
+      const adminCommentDoc = {
+        id: commentId,
+        message: adminComment.trim(),
+        recordingId: resolvedParams.transcriptId,
+        timestamp: new Date().toISOString(),
+        quote: highlightedTextForAdmin.text,
+        speaker: highlightedTextForAdmin.speaker || 'Multiple Speakers',
+        adminEmail: user.email || 'unknown',
+        adminName: user.displayName || 'Admin User'
+      }
+
+      const recordingOwnerUserId = foundPersonId || user.uid
+      const adminCommentsRef = doc(db, 'adminComments', recordingOwnerUserId, 'transcripts', resolvedParams.transcriptId)
+      const adminCommentsSnap = await getDoc(adminCommentsRef)
+
+      let existingAdminComments = []
+      if (adminCommentsSnap.exists()) {
+        const data = adminCommentsSnap.data()
+        existingAdminComments = Array.isArray(data?.comments) ? data.comments : []
+      }
+
+      existingAdminComments.push(adminCommentDoc)
+
+      await setDoc(adminCommentsRef, {
+        comments: existingAdminComments,
+        lastUpdated: new Date().toISOString(),
+        transcriptId: resolvedParams.transcriptId,
+        userId: recordingOwnerUserId
+      }, { merge: true })
+
+      setAdminComments([...adminComments, adminCommentDoc])
+      setAdminComment('')
+      setHighlightedTextForAdmin(null)
+
+      console.log('✅ Admin comment saved successfully!')
+      console.log(`📍 Saved to Firestore path: adminComments/${recordingOwnerUserId}/transcripts/${resolvedParams.transcriptId}`)
+
+    } catch (error) {
+      console.error('❌ Error saving admin comment:', error)
+    } finally {
+      setSavingAdminComment(false)
+    }
+  }
+
+  const deleteAdminComment = async (commentId: string) => {
+    const resolvedParams = await params
+    if (!user || !resolvedParams.transcriptId || !foundPersonId) {
+      return
+    }
+
+    try {
+      console.log(`🗑️ Deleting admin comment: ${commentId}`)
+
+      const recordingOwnerUserId = foundPersonId || user.uid
+      const adminCommentsRef = doc(db, 'adminComments', recordingOwnerUserId, 'transcripts', resolvedParams.transcriptId)
+      const adminCommentsSnap = await getDoc(adminCommentsRef)
+
+      if (adminCommentsSnap.exists()) {
+        const data = adminCommentsSnap.data()
+        const existingAdminComments = Array.isArray(data?.comments) ? data.comments : []
+
+        // Filter out the comment to delete
+        const updatedComments = existingAdminComments.filter((comment: any) => comment.id !== commentId)
+
+        await setDoc(adminCommentsRef, {
+          comments: updatedComments,
+          lastUpdated: new Date().toISOString(),
+          transcriptId: resolvedParams.transcriptId,
+          userId: recordingOwnerUserId
+        }, { merge: true })
+
+        // Update local state
+        setAdminComments(updatedComments)
+        console.log(`✅ Admin comment deleted successfully: ${commentId}`)
+      }
+    } catch (error) {
+      console.error('❌ Error deleting admin comment:', error)
     }
   }
 
@@ -1387,7 +1524,16 @@ export default function ActivityLayout({
                                 speaker: 'Multiple Speakers',
                                 range: range
                               })
-                              
+
+                              // If user is admin or founder, also set highlightedTextForAdmin
+                              if (currentUserStatus === 'admin' || currentUserStatus === 'founder') {
+                                setHighlightedTextForAdmin({
+                                  text: selectedText,
+                                  speaker: 'Multiple Speakers',
+                                  range: range
+                                })
+                              }
+
                               selection.removeAllRanges()
                             }
                           }}
@@ -1542,44 +1688,128 @@ export default function ActivityLayout({
                     <div className="flex-1 overflow-y-auto p-4">
                       {rightActiveTab === 'comments' && (
                         <div className="space-y-4">
+                          {/* Show Admin Comments section only for admins and founders */}
+                          {(currentUserStatus === 'admin' || currentUserStatus === 'founder') && (
+                            <>
+                              <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Admin Comments</h3>
+                              </div>
+                              <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Visible only to admins</p>
+
+                              {/* Admin Comment Form */}
+                              {highlightedTextForAdmin && (
+                                <div className="border border-orange-200 dark:border-orange-600 rounded-lg p-4 mb-4 bg-orange-50 dark:bg-orange-900/20">
+                                  <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Selected Text</h5>
+                                  <div className="text-sm text-gray-600 dark:text-gray-300 bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded border-l-4 border-yellow-400 mb-3">
+                                    "{highlightedTextForAdmin.text}" - {highlightedTextForAdmin.speaker}
+                                  </div>
+
+                                  <textarea
+                                    value={adminComment}
+                                    onChange={(e) => setAdminComment(e.target.value)}
+                                    placeholder="Add admin notes (only admins can see)..."
+                                    className="w-full p-3 border border-orange-200 dark:border-orange-600 dark:bg-gray-700 dark:text-white rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                    rows={3}
+                                  />
+
+                                  <div className="flex gap-3 mt-3">
+                                    <button
+                                      onClick={saveAdminComment}
+                                      disabled={!adminComment.trim() || savingAdminComment}
+                                      className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                        !adminComment.trim() || savingAdminComment
+                                          ? 'bg-gray-100 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                                          : 'bg-orange-600 text-white hover:bg-orange-700'
+                                      }`}
+                                    >
+                                      {savingAdminComment ? 'Saving...' : 'Save Admin Note'}
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setAdminComment('')
+                                        setHighlightedTextForAdmin(null)
+                                      }}
+                                      className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"
+                                    >
+                                      Clear
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {!highlightedTextForAdmin && (
+                                <p className="text-sm text-gray-400 dark:text-gray-500 italic mb-4">
+                                  Highlight text in the transcript to add an admin note
+                                </p>
+                              )}
+
+                              {/* Admin Comments List */}
+                              <div className="space-y-3 mb-6">
+                                <div className="flex items-center justify-between">
+                                  <h5 className="text-sm font-medium text-gray-600 dark:text-gray-300">PREVIOUS ADMIN NOTES ({adminComments.length})</h5>
+                                </div>
+
+                                {adminComments.length > 0 ? (
+                                  <div className="space-y-3 max-h-64 overflow-y-auto">
+                                    {adminComments.map((adminComment, index) => (
+                                      <div key={adminComment.id || index} className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg border-l-4 border-orange-500 relative group">
+                                        <button
+                                          onClick={() => {
+                                            if (window.confirm('Are you sure you want to delete this admin note?')) {
+                                              deleteAdminComment(adminComment.id)
+                                            }
+                                          }}
+                                          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                                          title="Delete admin note"
+                                        >
+                                          <X className="w-4 h-4" />
+                                        </button>
+
+                                        <div className="flex items-start justify-between mb-2 pr-6">
+                                          <span className="text-xs text-orange-600 dark:text-orange-400 font-medium">
+                                            {adminComment.adminEmail || 'Admin'}
+                                          </span>
+                                          <span className="text-xs text-gray-400 dark:text-gray-500">
+                                            {adminComment.timestamp ? new Date(adminComment.timestamp).toLocaleDateString() : 'Recent'}
+                                          </span>
+                                        </div>
+
+                                        {adminComment.quote && (
+                                          <div className="text-xs text-gray-500 dark:text-gray-400 bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded border-l-2 border-yellow-400 mb-2">
+                                            <div className="flex items-center justify-between mb-1">
+                                              <span className="text-yellow-600 dark:text-yellow-400 font-medium">
+                                                {adminComment.speaker || 'Speaker'}
+                                              </span>
+                                            </div>
+                                            <div className="italic">
+                                              "{adminComment.quote}"
+                                            </div>
+                                          </div>
+                                        )}
+
+                                        <div className="text-sm text-gray-700 dark:text-gray-300">
+                                          {adminComment.message}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="text-center py-4">
+                                    <MessageSquare className="w-8 h-8 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">No admin notes yet</p>
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="border-t border-gray-300 dark:border-gray-600 pt-6 mt-6"></div>
+                            </>
+                          )}
+
+                          {/* Sales Rep Suggestions Section */}
                           <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Comments</h3>
-                            <button
-                              onClick={async () => {
-                                if (!foundPersonId) {
-                                  console.log('❌ No foundPersonId available for refresh')
-                                  return
-                                }
-                                console.log('🔄 Manual comment refresh triggered for:', foundPersonId)
-                                try {
-                                  const alertsRef = doc(db, 'alerts', foundPersonId)
-                                  const alertsSnap = await getDoc(alertsRef)
-
-                                  if (alertsSnap.exists()) {
-                                    const data = alertsSnap.data()
-                                    const alerts = Array.isArray(data?.alerts) ? data.alerts : []
-                                    const sortedComments = alerts
-                                      .filter((alert: any) => alert && (alert.message || alert.title))
-                                      .sort((a: any, b: any) => {
-                                        const timeA = new Date(a.timestamp || 0).getTime()
-                                        const timeB = new Date(b.timestamp || 0).getTime()
-                                        return timeB - timeA
-                                      })
-
-                                    setExistingComments(sortedComments)
-                                    console.log(`🔄 Manual refresh loaded ${sortedComments.length} comments`)
-                                  } else {
-                                    console.log('📄 No document found during manual refresh')
-                                    setExistingComments([])
-                                  }
-                                } catch (error) {
-                                  console.error('❌ Manual refresh error:', error)
-                                }
-                              }}
-                              className="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                            >
-                              🔄 Refresh
-                            </button>
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                              {(currentUserStatus === 'admin' || currentUserStatus === 'founder') ? 'Sales Rep Suggestions' : 'Comments'}
+                            </h3>
                           </div>
                           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Private to your company</p>
                           
