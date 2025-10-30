@@ -1,5 +1,5 @@
 // Firebase configuration and initialization
-import { initializeApp } from 'firebase/app'
+import { initializeApp, getApps, getApp } from 'firebase/app'
 import { 
   getAuth, 
   GoogleAuthProvider, 
@@ -21,21 +21,44 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 }
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig)
+// Initialize Firebase only if we're in the browser and have valid config
+let app: any = null
+let auth: any = null
+let db: any = null
 
-// Initialize Firebase Auth
-export const auth = getAuth(app)
+if (typeof window !== 'undefined' && firebaseConfig.apiKey) {
+  // Initialize Firebase only once
+  app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp()
+  
+  // Initialize Firebase Auth
+  auth = getAuth(app)
+  
+  // Initialize Firestore
+  db = getFirestore(app)
+}
 
-// Initialize Firestore
-export const db = getFirestore(app)
+export { auth, db }
 
-// Google Auth Provider
-export const googleProvider = new GoogleAuthProvider()
+// Google Auth Provider - initialize only on client
+let googleProvider: GoogleAuthProvider | null = null
+if (typeof window !== 'undefined') {
+  googleProvider = new GoogleAuthProvider()
+}
 
-// Auth functions
-export const signInWithGoogle = () => signInWithPopup(auth, googleProvider)
-export const logout = () => signOut(auth)
+// Auth functions with null checks
+export const signInWithGoogle = () => {
+  if (!auth || !googleProvider) {
+    throw new Error('Firebase not initialized')
+  }
+  return signInWithPopup(auth, googleProvider)
+}
+
+export const logout = () => {
+  if (!auth) {
+    throw new Error('Firebase not initialized')
+  }
+  return signOut(auth)
+}
 
 // Email verification functions
 export const sendVerificationEmail = (user: any) => sendEmailVerification(user)
