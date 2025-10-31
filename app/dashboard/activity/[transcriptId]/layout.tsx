@@ -296,6 +296,9 @@ export default function ActivityLayout({
               hasSpeakerTranscript: !!foundTranscriptData['speaker transcript'],
               speakerTranscriptLength: foundTranscriptData['speaker transcript']?.length || 0,
               transcriptName: foundTranscriptData.name,
+              audioURL: foundTranscriptData.audioURL,
+              url: foundTranscriptData.url,
+              allKeys: Object.keys(foundTranscriptData),
               keys: Object.keys(foundTranscriptData).filter(key => key.toLowerCase().includes('transcript'))
             })
           }
@@ -1346,7 +1349,7 @@ export default function ActivityLayout({
                       <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Transcript</h2>
                       
                       {/* Audio Player */}
-                      {transcriptData?.audioURL && (
+                      {(transcriptData?.audioURL || transcriptData?.url) && (
                         <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
                           <div className="flex items-center space-x-3 mb-2">
                             <div className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
@@ -1362,17 +1365,31 @@ export default function ActivityLayout({
                               </p>
                             </div>
                           </div>
-                          <audio 
-                            controls 
+                          <audio
+                            controls
                             className="w-full h-10"
                             preload="metadata"
+                            src={transcriptData.audioURL || transcriptData.url}
+                            onError={(e) => {
+                              console.error('🎵 Audio loading error:', {
+                                audioURL: transcriptData.audioURL,
+                                url: transcriptData.url,
+                                usedURL: transcriptData.audioURL || transcriptData.url,
+                                error: e.currentTarget.error,
+                                errorCode: e.currentTarget.error?.code,
+                                errorMessage: e.currentTarget.error?.message
+                              })
+                            }}
+                            onLoadedMetadata={() => {
+                              console.log('🎵 Audio metadata loaded successfully')
+                            }}
                             style={{
                               filter: 'grayscale(40%) brightness(95%) contrast(100%)'
                             }}
                           >
-                            <source src={transcriptData.audioURL} type="audio/m4a" />
-                            <source src={transcriptData.audioURL} type="audio/mp4" />
-                            <source src={transcriptData.audioURL} type="audio/mpeg" />
+                            <source src={transcriptData.audioURL || transcriptData.url} type="audio/m4a" />
+                            <source src={transcriptData.audioURL || transcriptData.url} type="audio/mp4" />
+                            <source src={transcriptData.audioURL || transcriptData.url} type="audio/mpeg" />
                             Your browser does not support the audio element.
                           </audio>
                         </div>

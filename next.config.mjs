@@ -23,6 +23,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: https: blob:",
+              "media-src 'self' https://storage.googleapis.com https://*.firebasestorage.app blob:",
               "connect-src 'self' https://firestore.googleapis.com https://firebase.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://us.i.posthog.com https://us-assets.i.posthog.com wss: ws:",
               "worker-src 'self' blob:",
               "child-src 'self' blob:",
