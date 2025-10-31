@@ -21,7 +21,7 @@ function getApiKeyForWorkspace(workspaceId: string | null) {
 // Campaign name patterns to match
 const CAMPAIGN_PATTERNS: Record<string, string[]> = {
   'roger-hospitals-chapel-hill': ['Roger Hospital Chapel Hill', 'Roger Hospitals Chapel Hill'],
-  'roger-real-estate-offices': ['Roger Real Estate Offices'],
+  'roger-real-estate-offices': ['Candytrail Real Estate Campaign', 'Roger Real Estate Offices'],
   'roger-wisconsin-leads': ['Roger Wisconsin leads', 'Roger Wisconsin Leads']
 }
 

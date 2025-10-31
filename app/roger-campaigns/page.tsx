@@ -32,8 +32,8 @@ const ROGER_CAMPAIGNS = [
     id: 'roger-real-estate-offices',
     name: 'Roger Real Estate Offices',
     campaignName: 'roger-real-estate-offices', 
-    workspaceId: '2',
-    workspaceName: 'Paramount Realty USA',
+    workspaceId: '3',
+    workspaceName: 'Modu campaign',
     description: 'Real estate office outreach campaign analytics',
     clientUrl: '/client/roger-real-estate-offices',
     status: 'Active'

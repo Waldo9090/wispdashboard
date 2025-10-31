@@ -18,7 +18,7 @@ export const CLIENT_ACCESS_MAP: Record<string, ClientConfig> = {
   'roger-real-estate-offices': {
     name: 'Roger Real Estate Offices', 
     campaignId: 'roger-real-estate-offices', // This will be auto-detected by campaign name matching
-    workspaceId: '2', // Paramount Realty USA
+    workspaceId: '3', // Modu campaign
     description: 'Real estate office outreach campaign analytics'
   },
   'roger-wisconsin-leads': {
