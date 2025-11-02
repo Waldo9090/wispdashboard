@@ -29,6 +29,7 @@ import {
   History,
   Plus,
   Send,
+  Check,
 } from "lucide-react"
 import { useAuth } from "@/context/auth-context"
 import { collection, getDocs, doc, getDoc, setDoc } from "firebase/firestore"
@@ -200,7 +201,8 @@ export default function Dashboard() {
   const [savingComment, setSavingComment] = useState(false)
   const [existingComments, setExistingComments] = useState<any[]>([])
   const [loadingComments, setLoadingComments] = useState(false)
-  
+  const [reviewedStatuses, setReviewedStatuses] = useState<Record<string, boolean>>({})
+
   // Add pagination state
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage] = useState(20) // Show only 20 items initially
@@ -1172,6 +1174,36 @@ export default function Dashboard() {
     }
   }
 
+  // Function to load reviewed statuses for recordings
+  const loadReviewedStatuses = async (timestampsData: TimestampData[]) => {
+    try {
+      const statuses: Record<string, boolean> = {}
+
+      // Batch fetch reviewed statuses
+      const fetchPromises = timestampsData.map(async (recording) => {
+        if (recording.transcriptDocumentId && recording.id) {
+          try {
+            const adminCommentsRef = doc(db, 'adminComments', recording.transcriptDocumentId, 'transcripts', recording.id)
+            const adminCommentsSnap = await getDoc(adminCommentsRef)
+
+            if (adminCommentsSnap.exists()) {
+              const data = adminCommentsSnap.data()
+              statuses[recording.id] = data?.reviewed || false
+            }
+          } catch (error) {
+            // Silently fail for individual recordings
+          }
+        }
+      })
+
+      await Promise.all(fetchPromises)
+      setReviewedStatuses(statuses)
+      console.log(`✅ Loaded reviewed statuses for ${Object.keys(statuses).length} recordings`)
+    } catch (error) {
+      console.error('❌ Error loading reviewed statuses:', error)
+    }
+  }
+
   // Function to fetch and decrypt user data from transcript document
   const fetchAndDecryptTranscriptUserData = async (transcriptDocumentId: string): Promise<string> => {
     try {
@@ -1886,7 +1918,10 @@ export default function Dashboard() {
       
       // Load users after timestamp data is available
       loadAvailableUsersFromTimestampData(timestampsData)
-      
+
+      // Load reviewed statuses for all recordings
+      loadReviewedStatuses(timestampsData)
+
     } catch (error) {
       console.error('❌ [CLIENT] Error loading timestamp data:', error)
     } finally {
@@ -2604,6 +2639,14 @@ export default function Dashboard() {
                             </div>
                           )}
                         </div>
+                        {/* Reviewed checkmark */}
+                        {reviewedStatuses[recording.id] && (
+                          <div className="flex-shrink-0 ml-4">
+                            <div className="w-6 h-6 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                              <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                     ))}

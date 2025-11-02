@@ -2,7 +2,7 @@
 
 import { ReactNode, useState, useEffect } from 'react'
 import { usePathname } from "next/navigation"
-import { FileText, MessageSquare, ActivitySquare, Target, BarChart3, Clock, MessageCircle, User, Calendar, Star, ChevronLeft, ChevronRight, X, TrendingUp, Sparkles } from "lucide-react"
+import { FileText, MessageSquare, ActivitySquare, Target, BarChart3, Clock, MessageCircle, User, Calendar, Star, ChevronLeft, ChevronRight, X, TrendingUp, Sparkles, Check } from "lucide-react"
 import Link from "next/link"
 import { useTheme } from "next-themes"
 import Image from "next/image"
@@ -69,6 +69,8 @@ export default function ActivityLayout({
     partialResults?: number;
   } | null>(null)
   const [selectedTracker, setSelectedTracker] = useState<string | null>(null)
+  const [isReviewed, setIsReviewed] = useState(false)
+  const [savingReviewStatus, setSavingReviewStatus] = useState(false)
 
   // Reset processing timeout state on page load
   useEffect(() => {
@@ -201,6 +203,30 @@ export default function ActivityLayout({
     }
 
     loadAdminComments()
+  }, [foundPersonId, params])
+
+  // Load reviewed status
+  useEffect(() => {
+    const loadReviewedStatus = async () => {
+      const resolvedParams = await params
+      if (!foundPersonId || !resolvedParams.transcriptId) {
+        return
+      }
+
+      try {
+        const adminCommentsRef = doc(db, 'adminComments', foundPersonId, 'transcripts', resolvedParams.transcriptId)
+        const adminCommentsSnap = await getDoc(adminCommentsRef)
+
+        if (adminCommentsSnap.exists()) {
+          const data = adminCommentsSnap.data()
+          setIsReviewed(data?.reviewed || false)
+        }
+      } catch (error) {
+        console.error('❌ Error loading reviewed status:', error)
+      }
+    }
+
+    loadReviewedStatus()
   }, [foundPersonId, params])
 
   // Load current user status to filter sidebar items
@@ -436,7 +462,7 @@ export default function ActivityLayout({
 
   const saveAdminComment = async () => {
     const resolvedParams = await params
-    if (!adminComment.trim() || !highlightedTextForAdmin || savingAdminComment || !user || !resolvedParams.transcriptId) {
+    if (!adminComment.trim() || savingAdminComment || !user || !resolvedParams.transcriptId) {
       return
     }
 
@@ -450,8 +476,8 @@ export default function ActivityLayout({
         message: adminComment.trim(),
         recordingId: resolvedParams.transcriptId,
         timestamp: new Date().toISOString(),
-        quote: highlightedTextForAdmin.text,
-        speaker: highlightedTextForAdmin.speaker || 'Multiple Speakers',
+        quote: highlightedTextForAdmin?.text || null,
+        speaker: highlightedTextForAdmin?.speaker || null,
         adminEmail: user.email || 'unknown',
         adminName: user.displayName || 'Admin User'
       }
@@ -522,6 +548,36 @@ export default function ActivityLayout({
       }
     } catch (error) {
       console.error('❌ Error deleting admin comment:', error)
+    }
+  }
+
+  const toggleReviewed = async () => {
+    const resolvedParams = await params
+    if (!foundPersonId || !resolvedParams.transcriptId || savingReviewStatus) {
+      return
+    }
+
+    try {
+      setSavingReviewStatus(true)
+      const newReviewedStatus = !isReviewed
+
+      const adminCommentsRef = doc(db, 'adminComments', foundPersonId, 'transcripts', resolvedParams.transcriptId)
+
+      await setDoc(adminCommentsRef, {
+        reviewed: newReviewedStatus,
+        reviewedAt: newReviewedStatus ? new Date().toISOString() : null,
+        reviewedBy: newReviewedStatus ? (user?.email || 'unknown') : null,
+        lastUpdated: new Date().toISOString(),
+        transcriptId: resolvedParams.transcriptId,
+        userId: foundPersonId
+      }, { merge: true })
+
+      setIsReviewed(newReviewedStatus)
+      console.log(`✅ Reviewed status updated to: ${newReviewedStatus}`)
+    } catch (error) {
+      console.error('❌ Error updating reviewed status:', error)
+    } finally {
+      setSavingReviewStatus(false)
     }
   }
 
@@ -1710,55 +1766,64 @@ export default function ActivityLayout({
                             <>
                               <div className="flex items-center justify-between mb-2">
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Admin Comments</h3>
+                                <button
+                                  onClick={toggleReviewed}
+                                  disabled={savingReviewStatus}
+                                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                                    isReviewed
+                                      ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
+                                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                  }`}
+                                >
+                                  {isReviewed && <Check className="w-4 h-4" />}
+                                  {savingReviewStatus ? 'Saving...' : isReviewed ? 'Reviewed' : 'Mark as Reviewed'}
+                                </button>
                               </div>
                               <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Visible only to admins</p>
 
                               {/* Admin Comment Form */}
-                              {highlightedTextForAdmin && (
-                                <div className="border border-orange-200 dark:border-orange-600 rounded-lg p-4 mb-4 bg-orange-50 dark:bg-orange-900/20">
-                                  <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Selected Text</h5>
-                                  <div className="text-sm text-gray-600 dark:text-gray-300 bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded border-l-4 border-yellow-400 mb-3">
-                                    "{highlightedTextForAdmin.text}" - {highlightedTextForAdmin.speaker}
+                              <div className="border border-orange-200 dark:border-orange-600 rounded-lg p-4 mb-4 bg-orange-50 dark:bg-orange-900/20">
+                                {/* Show highlighted text if it exists */}
+                                {highlightedTextForAdmin && (
+                                  <div className="mb-3">
+                                    <h5 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Selected Text</h5>
+                                    <div className="text-sm text-gray-600 dark:text-gray-300 bg-yellow-50 dark:bg-yellow-900/20 p-2 rounded border-l-4 border-yellow-400">
+                                      "{highlightedTextForAdmin.text}" - {highlightedTextForAdmin.speaker}
+                                    </div>
                                   </div>
+                                )}
 
-                                  <textarea
-                                    value={adminComment}
-                                    onChange={(e) => setAdminComment(e.target.value)}
-                                    placeholder="Add admin notes (only admins can see)..."
-                                    className="w-full p-3 border border-orange-200 dark:border-orange-600 dark:bg-gray-700 dark:text-white rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                                    rows={3}
-                                  />
+                                <textarea
+                                  value={adminComment}
+                                  onChange={(e) => setAdminComment(e.target.value)}
+                                  placeholder="Add admin notes (only admins can see)... You can optionally highlight text from the transcript to reference it."
+                                  className="w-full p-3 border border-orange-200 dark:border-orange-600 dark:bg-gray-700 dark:text-white rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                  rows={3}
+                                />
 
-                                  <div className="flex gap-3 mt-3">
-                                    <button
-                                      onClick={saveAdminComment}
-                                      disabled={!adminComment.trim() || savingAdminComment}
-                                      className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                        !adminComment.trim() || savingAdminComment
-                                          ? 'bg-gray-100 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed'
-                                          : 'bg-orange-600 text-white hover:bg-orange-700'
-                                      }`}
-                                    >
-                                      {savingAdminComment ? 'Saving...' : 'Save Admin Note'}
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        setAdminComment('')
-                                        setHighlightedTextForAdmin(null)
-                                      }}
-                                      className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"
-                                    >
-                                      Clear
-                                    </button>
-                                  </div>
+                                <div className="flex gap-3 mt-3">
+                                  <button
+                                    onClick={saveAdminComment}
+                                    disabled={!adminComment.trim() || savingAdminComment}
+                                    className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                      !adminComment.trim() || savingAdminComment
+                                        ? 'bg-gray-100 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed'
+                                        : 'bg-orange-600 text-white hover:bg-orange-700'
+                                    }`}
+                                  >
+                                    {savingAdminComment ? 'Saving...' : 'Save Admin Note'}
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setAdminComment('')
+                                      setHighlightedTextForAdmin(null)
+                                    }}
+                                    className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"
+                                  >
+                                    Clear
+                                  </button>
                                 </div>
-                              )}
-
-                              {!highlightedTextForAdmin && (
-                                <p className="text-sm text-gray-400 dark:text-gray-500 italic mb-4">
-                                  Highlight text in the transcript to add an admin note
-                                </p>
-                              )}
+                              </div>
 
                               {/* Admin Comments List */}
                               <div className="space-y-3 mb-6">
