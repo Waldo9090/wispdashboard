@@ -51,7 +51,9 @@ export function CampaignFilter({ selectedCampaignId, onCampaignChange, workspace
         }
         
         const campaignData = await response.json()
-        setCampaigns(campaignData)
+        // Handle both old and new API response formats
+        const campaignsArray = Array.isArray(campaignData) ? campaignData : (campaignData.items || [])
+        setCampaigns(campaignsArray)
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load campaigns')
         console.error('Failed to fetch campaigns:', err)
@@ -68,7 +70,7 @@ export function CampaignFilter({ selectedCampaignId, onCampaignChange, workspace
     }
   }, [workspaceId])
 
-  const selectedCampaign = campaigns.find(c => c.campaign_id === selectedCampaignId)
+  const selectedCampaign = Array.isArray(campaigns) ? campaigns.find(c => c.campaign_id === selectedCampaignId) : null
 
   if (loading) {
     return (
@@ -117,7 +119,7 @@ export function CampaignFilter({ selectedCampaignId, onCampaignChange, workspace
         </DropdownMenuItem>
 
         {/* Individual Campaigns */}
-        {campaigns.map((campaign) => (
+        {Array.isArray(campaigns) && campaigns.map((campaign) => (
           <DropdownMenuItem
             key={campaign.campaign_id}
             onClick={() => onCampaignChange(campaign.campaign_id)}
@@ -141,7 +143,7 @@ export function CampaignFilter({ selectedCampaignId, onCampaignChange, workspace
           </DropdownMenuItem>
         ))}
 
-        {campaigns.length === 0 && (
+        {Array.isArray(campaigns) && campaigns.length === 0 && (
           <div className="p-6 text-center text-sm text-slate-500 font-medium">
             No campaigns found
           </div>

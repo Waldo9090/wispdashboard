@@ -10,11 +10,12 @@ import { RogerCampaignResolver } from "@/components/roger-campaign-resolver"
 import { RogerCampaignsMetrics } from "@/components/roger-campaigns-metrics"
 import { ClientPerformanceChart } from "@/components/client-performance-chart"
 import { ClientCampaignBreakdown } from "@/components/client-campaign-breakdown"
+import { CampaignMessages } from "@/components/campaign-messages"
 import { DateRangeFilter, type DateRange } from "@/components/date-range-filter"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Loader2, ExternalLink, BarChart3, LogOut } from "lucide-react"
+import { Loader2, ExternalLink, BarChart3, LogOut, Mail } from "lucide-react"
 
 // Roger Campaigns Configuration
 const ROGER_CAMPAIGNS = [
@@ -303,6 +304,17 @@ export default function RogerCampaignsPage() {
                       >
                         Campaign Breakdown
                       </button>
+                      <button
+                        onClick={() => setSelectedTab("messages")}
+                        className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                          selectedTab === "messages"
+                            ? "bg-indigo-100 text-indigo-700"
+                            : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
+                        }`}
+                      >
+                        <Mail className="w-4 h-4" />
+                        Campaign Messages
+                      </button>
                     </div>
 
                     <div className="p-6">
@@ -343,6 +355,14 @@ export default function RogerCampaignsPage() {
                           campaignName={selectedCampaign.campaignName}
                           workspaceId={selectedCampaign.workspaceId}
                           dateRange={selectedDateRange}
+                        />
+                      )}
+
+                      {selectedTab === "messages" && (
+                        <CampaignMessages 
+                          campaignName={selectedCampaign.campaignName}
+                          campaignId={(selectedCampaign as any).campaignId}
+                          workspaceId={selectedCampaign.workspaceId}
                         />
                       )}
                     </div>
@@ -528,6 +548,17 @@ export default function RogerCampaignsPage() {
                       >
                         Campaign Breakdown
                       </button>
+                      <button
+                        onClick={() => setSelectedTab("messages")}
+                        className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                          selectedTab === "messages"
+                            ? "bg-indigo-100 text-indigo-700"
+                            : "text-slate-600 hover:text-slate-800 hover:bg-slate-50"
+                        }`}
+                      >
+                        <Mail className="w-4 h-4" />
+                        Campaign Messages
+                      </button>
                     </div>
 
                     <div className="p-6">
@@ -568,6 +599,14 @@ export default function RogerCampaignsPage() {
                           campaignName={selectedCampaign.campaignName}
                           workspaceId={selectedCampaign.workspaceId}
                           dateRange={selectedDateRange}
+                        />
+                      )}
+
+                      {selectedTab === "messages" && (
+                        <CampaignMessages 
+                          campaignName={selectedCampaign.campaignName}
+                          campaignId={(selectedCampaign as any).campaignId}
+                          workspaceId={selectedCampaign.workspaceId}
                         />
                       )}
                     </div>

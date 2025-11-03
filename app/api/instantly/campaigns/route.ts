@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
   try {
     console.log('=== Campaigns API Request ===')
     const { searchParams } = new URL(request.url)
-    const workspaceId = searchParams.get('workspace_id')
+    const workspaceId = searchParams.get('workspaceId') || searchParams.get('workspace_id')
     
     console.log('Request params:', { workspaceId })
     
@@ -64,17 +64,20 @@ export async function GET(request: NextRequest) {
     const data = await response.json()
     const campaigns = data.items || data
     
-    // Return simplified campaign list for dropdown
-    const campaignList = campaigns.map((campaign: any) => ({
-      campaign_id: campaign.id,
-      campaign_name: campaign.name,
-      campaign_status: campaign.status,
-      sequences: campaign.sequences || [],
-      // For dropdown compatibility
-      emails_sent_count: 0 // Will be filled from analytics if needed
-    }))
-    
-    return NextResponse.json(campaignList)
+    // Return campaign data with full details for campaign messages functionality
+    return NextResponse.json({
+      items: campaigns.map((campaign: any) => ({
+        id: campaign.id,
+        name: campaign.name,
+        status: campaign.status,
+        sequences: campaign.sequences || [],
+        // Legacy compatibility
+        campaign_id: campaign.id,
+        campaign_name: campaign.name,
+        campaign_status: campaign.status,
+        emails_sent_count: 0
+      }))
+    })
     
   } catch (error) {
     console.error('Campaigns API Error:', error)
