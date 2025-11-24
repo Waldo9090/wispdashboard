@@ -30,6 +30,7 @@ import {
   Plus,
   Send,
   Check,
+  Circle,
 } from "lucide-react"
 import { useAuth } from "@/context/auth-context"
 import { collection, getDocs, doc, getDoc, setDoc } from "firebase/firestore"
@@ -202,6 +203,7 @@ export default function Dashboard() {
   const [existingComments, setExistingComments] = useState<any[]>([])
   const [loadingComments, setLoadingComments] = useState(false)
   const [reviewedStatuses, setReviewedStatuses] = useState<Record<string, boolean>>({})
+  const [actionFollowUpStatuses, setActionFollowUpStatuses] = useState<Record<string, 'in_progress' | 'completed' | null>>({})
 
   // Add pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -1204,6 +1206,40 @@ export default function Dashboard() {
     }
   }
 
+  // Function to load action follow up statuses for recordings
+  const loadActionFollowUpStatuses = async (timestampsData: TimestampData[]) => {
+    try {
+      const statuses: Record<string, 'in_progress' | 'completed' | null> = {}
+
+      // Batch fetch action follow up statuses
+      const fetchPromises = timestampsData.map(async (recording) => {
+        if (recording.transcriptDocumentId && recording.id) {
+          try {
+            const adminCommentsRef = doc(db, 'adminComments', recording.transcriptDocumentId, 'transcripts', recording.id)
+            const adminCommentsSnap = await getDoc(adminCommentsRef)
+
+            if (adminCommentsSnap.exists()) {
+              const data = adminCommentsSnap.data()
+              // Default to 'in_progress' if not set
+              statuses[recording.id] = data?.actionFollowUpStatus || 'in_progress'
+            } else {
+              // If document doesn't exist, default to 'in_progress'
+              statuses[recording.id] = 'in_progress'
+            }
+          } catch (error) {
+            // Silently fail for individual recordings
+          }
+        }
+      })
+
+      await Promise.all(fetchPromises)
+      setActionFollowUpStatuses(statuses)
+      console.log(`✅ Loaded action follow up statuses for ${Object.keys(statuses).length} recordings`)
+    } catch (error) {
+      console.error('❌ Error loading action follow up statuses:', error)
+    }
+  }
+
   // Function to fetch and decrypt user data from transcript document
   const fetchAndDecryptTranscriptUserData = async (transcriptDocumentId: string): Promise<string> => {
     try {
@@ -1921,6 +1957,8 @@ export default function Dashboard() {
 
       // Load reviewed statuses for all recordings
       loadReviewedStatuses(timestampsData)
+      // Load action follow up statuses for all recordings
+      loadActionFollowUpStatuses(timestampsData)
 
     } catch (error) {
       console.error('❌ [CLIENT] Error loading timestamp data:', error)
@@ -2639,14 +2677,21 @@ export default function Dashboard() {
                             </div>
                           )}
                         </div>
-                        {/* Reviewed checkmark */}
-                        {reviewedStatuses[recording.id] && (
-                          <div className="flex-shrink-0 ml-4">
+                        {/* Action Follow Up and Reviewed checkmarks */}
+                        <div className="flex-shrink-0 ml-4 flex items-center gap-2">
+                          {/* Action Follow Up checkmark - only show when completed */}
+                          {actionFollowUpStatuses[recording.id] === 'completed' && (
                             <div className="w-6 h-6 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
                               <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
                             </div>
-                          </div>
-                        )}
+                          )}
+                          {/* Reviewed checkmark */}
+                          {reviewedStatuses[recording.id] && (
+                            <div className="w-6 h-6 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                              <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                     ))}

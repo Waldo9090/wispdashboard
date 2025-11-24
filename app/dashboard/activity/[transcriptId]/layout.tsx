@@ -2,7 +2,7 @@
 
 import { ReactNode, useState, useEffect } from 'react'
 import { usePathname } from "next/navigation"
-import { FileText, MessageSquare, ActivitySquare, Target, BarChart3, Clock, MessageCircle, User, Calendar, Star, ChevronLeft, ChevronRight, X, TrendingUp, Sparkles, Check } from "lucide-react"
+import { FileText, MessageSquare, ActivitySquare, Target, BarChart3, Clock, MessageCircle, User, Calendar, Star, ChevronLeft, ChevronRight, X, TrendingUp, Sparkles, Check, Circle } from "lucide-react"
 import Link from "next/link"
 import { useTheme } from "next-themes"
 import Image from "next/image"
@@ -71,6 +71,8 @@ export default function ActivityLayout({
   const [selectedTracker, setSelectedTracker] = useState<string | null>(null)
   const [isReviewed, setIsReviewed] = useState(false)
   const [savingReviewStatus, setSavingReviewStatus] = useState(false)
+  const [actionFollowUpStatus, setActionFollowUpStatus] = useState<'in_progress' | 'completed' | null>('in_progress')
+  const [savingActionFollowUpStatus, setSavingActionFollowUpStatus] = useState(false)
 
   // Reset processing timeout state on page load
   useEffect(() => {
@@ -227,6 +229,35 @@ export default function ActivityLayout({
     }
 
     loadReviewedStatus()
+  }, [foundPersonId, params])
+
+  // Load action follow up status
+  useEffect(() => {
+    const loadActionFollowUpStatus = async () => {
+      const resolvedParams = await params
+      if (!foundPersonId || !resolvedParams.transcriptId) {
+        return
+      }
+
+      try {
+        const adminCommentsRef = doc(db, 'adminComments', foundPersonId, 'transcripts', resolvedParams.transcriptId)
+        const adminCommentsSnap = await getDoc(adminCommentsRef)
+
+        if (adminCommentsSnap.exists()) {
+          const data = adminCommentsSnap.data()
+          // Default to 'in_progress' if not set
+          setActionFollowUpStatus(data?.actionFollowUpStatus || 'in_progress')
+        } else {
+          // If document doesn't exist, default to 'in_progress'
+          setActionFollowUpStatus('in_progress')
+        }
+      } catch (error) {
+        console.error('❌ Error loading action follow up status:', error)
+        setActionFollowUpStatus('in_progress')
+      }
+    }
+
+    loadActionFollowUpStatus()
   }, [foundPersonId, params])
 
   // Load current user status to filter sidebar items
@@ -578,6 +609,37 @@ export default function ActivityLayout({
       console.error('❌ Error updating reviewed status:', error)
     } finally {
       setSavingReviewStatus(false)
+    }
+  }
+
+  const toggleActionFollowUp = async () => {
+    const resolvedParams = await params
+    if (!foundPersonId || !resolvedParams.transcriptId || savingActionFollowUpStatus) {
+      return
+    }
+
+    try {
+      setSavingActionFollowUpStatus(true)
+      // Toggle between 'in_progress' and 'completed'
+      const newStatus = actionFollowUpStatus === 'completed' ? 'in_progress' : 'completed'
+
+      const adminCommentsRef = doc(db, 'adminComments', foundPersonId, 'transcripts', resolvedParams.transcriptId)
+
+      await setDoc(adminCommentsRef, {
+        actionFollowUpStatus: newStatus,
+        actionFollowUpUpdatedAt: new Date().toISOString(),
+        actionFollowUpUpdatedBy: user?.email || 'unknown',
+        lastUpdated: new Date().toISOString(),
+        transcriptId: resolvedParams.transcriptId,
+        userId: foundPersonId
+      }, { merge: true })
+
+      setActionFollowUpStatus(newStatus)
+      console.log(`✅ Action follow up status updated to: ${newStatus}`)
+    } catch (error) {
+      console.error('❌ Error updating action follow up status:', error)
+    } finally {
+      setSavingActionFollowUpStatus(false)
     }
   }
 
@@ -1764,8 +1826,8 @@ export default function ActivityLayout({
                           {/* Show Admin Comments section only for admins and founders */}
                           {(currentUserStatus === 'admin' || currentUserStatus === 'founder') && (
                             <>
-                              <div className="flex items-center justify-between mb-2">
-                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Admin Comments</h3>
+                              <div className="mb-2">
+                                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Admin Comments</h3>
                                 <button
                                   onClick={toggleReviewed}
                                   disabled={savingReviewStatus}
@@ -1775,7 +1837,7 @@ export default function ActivityLayout({
                                       : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                                   }`}
                                 >
-                                  {isReviewed && <Check className="w-4 h-4" />}
+                                  {isReviewed ? <Check className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
                                   {savingReviewStatus ? 'Saving...' : isReviewed ? 'Reviewed' : 'Mark as Reviewed'}
                                 </button>
                               </div>
@@ -1797,7 +1859,7 @@ export default function ActivityLayout({
                                   value={adminComment}
                                   onChange={(e) => setAdminComment(e.target.value)}
                                   placeholder="Add admin notes (only admins can see)... You can optionally highlight text from the transcript to reference it."
-                                  className="w-full p-3 border border-orange-200 dark:border-orange-600 dark:bg-gray-700 dark:text-white rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                                  className="w-full p-3 border border-orange-200 dark:border-orange-600 dark:bg-gray-700 dark:text-white rounded-lg resize-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm placeholder:text-xs placeholder:text-gray-400 dark:placeholder:text-gray-500"
                                   rows={3}
                                 />
 
@@ -1888,10 +1950,26 @@ export default function ActivityLayout({
                           )}
 
                           {/* Sales Rep Suggestions Section */}
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                          <div className="mb-2">
+                            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                               {(currentUserStatus === 'admin' || currentUserStatus === 'founder') ? 'Sales Rep Suggestions' : 'Comments'}
                             </h3>
+                            <button
+                              onClick={toggleActionFollowUp}
+                              disabled={savingActionFollowUpStatus}
+                              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                                actionFollowUpStatus === 'completed'
+                                  ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
+                                  : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900/50'
+                              }`}
+                            >
+                              {actionFollowUpStatus === 'completed' ? <Check className="w-4 h-4" /> : <Circle className="w-4 h-4" />}
+                              {savingActionFollowUpStatus 
+                                ? 'Saving...' 
+                                : actionFollowUpStatus === 'completed' 
+                                  ? 'Action Follow Up' 
+                                  : 'Action Follow Up'}
+                            </button>
                           </div>
                           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Private to your company</p>
                           
