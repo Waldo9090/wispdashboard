@@ -1949,10 +1949,10 @@ export default function ActivityLayout({
                             </>
                           )}
 
-                          {/* Sales Rep Suggestions Section */}
+                          {/* Coaching Notes Section */}
                           <div className="mb-2">
                             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                              {(currentUserStatus === 'admin' || currentUserStatus === 'founder') ? 'Sales Rep Suggestions' : 'Comments'}
+                              {(currentUserStatus === 'admin' || currentUserStatus === 'founder') ? 'Coaching Notes' : 'Comments'}
                             </h3>
                             <button
                               onClick={toggleActionFollowUp}

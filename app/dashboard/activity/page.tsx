@@ -203,7 +203,9 @@ export default function Dashboard() {
   const [existingComments, setExistingComments] = useState<any[]>([])
   const [loadingComments, setLoadingComments] = useState(false)
   const [reviewedStatuses, setReviewedStatuses] = useState<Record<string, boolean>>({})
+  const [reviewedTimestamps, setReviewedTimestamps] = useState<Record<string, string | null>>({})
   const [actionFollowUpStatuses, setActionFollowUpStatuses] = useState<Record<string, 'in_progress' | 'completed' | null>>({})
+  const [actionFollowUpTimestamps, setActionFollowUpTimestamps] = useState<Record<string, string | null>>({})
 
   // Add pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -1180,6 +1182,7 @@ export default function Dashboard() {
   const loadReviewedStatuses = async (timestampsData: TimestampData[]) => {
     try {
       const statuses: Record<string, boolean> = {}
+      const timestamps: Record<string, string | null> = {}
 
       // Batch fetch reviewed statuses
       const fetchPromises = timestampsData.map(async (recording) => {
@@ -1191,6 +1194,7 @@ export default function Dashboard() {
             if (adminCommentsSnap.exists()) {
               const data = adminCommentsSnap.data()
               statuses[recording.id] = data?.reviewed || false
+              timestamps[recording.id] = data?.reviewedAt || null
             }
           } catch (error) {
             // Silently fail for individual recordings
@@ -1200,6 +1204,7 @@ export default function Dashboard() {
 
       await Promise.all(fetchPromises)
       setReviewedStatuses(statuses)
+      setReviewedTimestamps(timestamps)
       console.log(`✅ Loaded reviewed statuses for ${Object.keys(statuses).length} recordings`)
     } catch (error) {
       console.error('❌ Error loading reviewed statuses:', error)
@@ -1210,6 +1215,7 @@ export default function Dashboard() {
   const loadActionFollowUpStatuses = async (timestampsData: TimestampData[]) => {
     try {
       const statuses: Record<string, 'in_progress' | 'completed' | null> = {}
+      const timestamps: Record<string, string | null> = {}
 
       // Batch fetch action follow up statuses
       const fetchPromises = timestampsData.map(async (recording) => {
@@ -1222,6 +1228,7 @@ export default function Dashboard() {
               const data = adminCommentsSnap.data()
               // Default to 'in_progress' if not set
               statuses[recording.id] = data?.actionFollowUpStatus || 'in_progress'
+              timestamps[recording.id] = data?.actionFollowUpUpdatedAt || null
             } else {
               // If document doesn't exist, default to 'in_progress'
               statuses[recording.id] = 'in_progress'
@@ -1234,6 +1241,7 @@ export default function Dashboard() {
 
       await Promise.all(fetchPromises)
       setActionFollowUpStatuses(statuses)
+      setActionFollowUpTimestamps(timestamps)
       console.log(`✅ Loaded action follow up statuses for ${Object.keys(statuses).length} recordings`)
     } catch (error) {
       console.error('❌ Error loading action follow up statuses:', error)
@@ -2681,14 +2689,44 @@ export default function Dashboard() {
                         <div className="flex-shrink-0 ml-4 flex items-center gap-2">
                           {/* Action Follow Up checkmark - only show when completed */}
                           {actionFollowUpStatuses[recording.id] === 'completed' && (
-                            <div className="w-6 h-6 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-                              <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
+                            <div className="flex flex-col gap-0.5 px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                              <div className="flex items-center gap-1.5">
+                                <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                <span className="text-xs font-medium text-green-700 dark:text-green-400">Coaching Completed</span>
+                              </div>
+                              {actionFollowUpTimestamps[recording.id] && (
+                                <span className="text-[10px] text-green-600/70 dark:text-green-400/70 ml-5">
+                                  {new Date(actionFollowUpTimestamps[recording.id]).toLocaleDateString('en-US', { 
+                                    month: 'short', 
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true
+                                  })}
+                                </span>
+                              )}
                             </div>
                           )}
                           {/* Reviewed checkmark */}
                           {reviewedStatuses[recording.id] && (
-                            <div className="w-6 h-6 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-                              <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
+                            <div className="flex flex-col gap-0.5 px-2 py-1 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                              <div className="flex items-center gap-1.5">
+                                <Check className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                <span className="text-xs font-medium text-green-700 dark:text-green-400">Reviewed</span>
+                              </div>
+                              {reviewedTimestamps[recording.id] && (
+                                <span className="text-[10px] text-green-600/70 dark:text-green-400/70 ml-5">
+                                  {new Date(reviewedTimestamps[recording.id]).toLocaleDateString('en-US', { 
+                                    month: 'short', 
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                    hour: 'numeric',
+                                    minute: '2-digit',
+                                    hour12: true
+                                  })}
+                                </span>
+                              )}
                             </div>
                           )}
                         </div>
